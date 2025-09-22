@@ -1,261 +1,174 @@
-import express from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import os from 'node:os';
-import { exec as _exec } from 'node:child_process';
-import util from 'node:util';
-import compression from 'compression';
-import morgan from 'morgan';
-import helmet from 'helmet';
-import dotenv from 'dotenv';
-import si from 'systeminformation';
-
-dotenv.config();
-
-const exec = util.promisify(_exec);
-
-const PORT = Number.parseInt(process.env.PORT, 10) || 8080;
-const HOST = process.env.HOST || '0.0.0.0';
+import "dotenv/config";
+import express from "express";
+import helmet from "helmet";
+import compression from "compression";
+import morgan from "morgan";
+import path from "node:path";
+import os from "node:os";
+import { fileURLToPath } from "node:url";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
+import si from "systeminformation";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const execp = promisify(exec);
 
 const app = express();
-app.disable('x-powered-by');
-
-// Security + perf
-app.use(helmet({
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      "default-src": ["'self'"],
-      "script-src": ["'self'"],
-      "style-src": ["'self'", "'unsafe-inline'"],
-      "img-src": ["'self'", "data:"],
-      "connect-src": ["'self'"]
-    }
-  },
-  crossOriginEmbedderPolicy: false // allows inline assets for this simple app
-}));
+app.disable("x-powered-by");
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
-app.use(morgan('tiny'));
+app.use(morgan("tiny"));
 
-// Static UI
-const publicDir = path.join(__dirname, 'public');
-app.use(express.static(publicDir, {
-  etag: true,
-  maxAge: '1h',
-  immutable: true,
-}));
+// Serve static files (index.html, style.css, app.js) from ./public
+app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h" }));
 
-// ------ helpers ------
-async function getCpuTemp() {
-  // Try systeminformation first
+const REFRESH_MS = Number(process.env.REFRESH_MS || 2000);
+
+async function listContainers() {
   try {
-    const t = await si.cpuTemperature();
-    const c = t?.main || t?.max || null;
-    if (c && Number.isFinite(c)) {
-      return { celsius: c, source: 'systeminformation' };
-    }
-  } catch { /* ignore */ }
-
-  // Try vcgencmd (Raspberry Pi)
-  try {
-    const { stdout } = await exec('vcgencmd measure_temp');
-    // output like: temp=49.8'C
-    const m = stdout.match(/temp=([\d.]+)'C/);
-    if (m) {
-      return { celsius: Number.parseFloat(m[1]), source: 'vcgencmd' };
-    }
-  } catch { /* ignore */ }
-
-  // Try common thermal zone
-  try {
-    const { stdout } = await exec("awk '{print $1/1000}' /sys/class/thermal/thermal_zone0/temp");
-    const v = Number.parseFloat(stdout.trim());
-    if (Number.isFinite(v)) {
-      return { celsius: v, source: 'thermal_zone0' };
-    }
-  } catch { /* ignore */ }
-
-  return { celsius: null, source: null };
-}
-
-async function getDockerPs() {
-  try {
-    const { stdout } = await exec(`docker ps --format '{{json .}}'`);
-    const lines = stdout.split('\n').map(s => s.trim()).filter(Boolean);
-    const items = lines.map(l => {
-      try { return JSON.parse(l); } catch { return null; }
-    }).filter(Boolean);
-    // Normalize a few fields
-    return items.map(i => ({
-      id: i.ID,
-      image: i.Image,
-      name: i.Names,
-      status: i.Status,
-      ports: i.Ports,
-      createdAt: i.RunningFor,
-    }));
-  } catch (e) {
-    return { error: e?.message || String(e) };
+    // --no-trunc to avoid truncated names/images; custom delimiter to parse safely
+    const cmd = 'docker ps --no-trunc --format "{{.Names}}||{{.Image}}||{{.Status}}||{{.Ports}}"' ;
+    const { stdout } = await execp(cmd, { timeout: 3000 });
+    const lines = stdout.trim().split("\n").filter(Boolean);
+    return lines.map(line => {
+      const [name, image, status, ports] = line.split("||");
+      const isUp = /^Up\b/i.test(status || "");
+      return { name, image, status, ports: ports || "", up: isUp };
+    });
+  } catch (err) {
+    // Docker might not be installed or user lacks permissions; fail soft
+    return { error: err.message, containers: [] };
   }
 }
 
-async function getDockerInfo() {
-  try {
-    const { stdout } = await exec(`docker info --format '{{json .}}'`);
-    const obj = JSON.parse(stdout);
-    return {
-      serverVersion: obj.ServerVersion,
-      driver: obj.Driver,
-      cgroupDriver: obj.CgroupDriver,
-      loggingDriver: obj.LoggingDriver,
-      kernelVersion: obj.KernelVersion,
-      containers: obj.Containers,
-      containersRunning: obj.ContainersRunning,
-      containersPaused: obj.ContainersPaused,
-      containersStopped: obj.ContainersStopped,
-      images: obj.Images
-    };
-  } catch {
-    return null; // Not fatal
-  }
+function bytesTo(x) {
+  if (x == null) return null;
+  const gb = x / (1024 ** 3);
+  return { gb, pretty: `${gb.toFixed(1)} GiB` };
 }
 
-function pickDisks(fsArr) {
-  const wanted = ['/', '/srv/storage'];
-  const out = [];
-  for (const d of fsArr) {
-    if (wanted.includes(d.mount)) out.push(d);
-  }
-  // If '/' missing, add the largest mount as a proxy
-  if (!out.find(d => d.mount === '/') && fsArr.length) {
-    const largest = fsArr.reduce((a, b) => (a.size > b.size ? a : b));
-    out.unshift(largest);
-  }
-  return out;
+function usePercent(used, total) {
+  if (!total) return 0;
+  return Math.max(0, Math.min(100, (used / total) * 100));
 }
 
-async function getSystem() {
-  const [osInfo, mem, load, fs, cpu, time] = await Promise.all([
-    si.osInfo(),
-    si.mem(),
-    si.currentLoad(),
-    si.fsSize(),
+async function getHealth() {
+  const [cpu, load, mem, fs, temp, osInfo, time, versions, batteries, docker] = await Promise.all([
     si.cpu(),
-    si.time()
+    si.currentLoad(),
+    si.mem(),
+    si.fsSize(),
+    si.cpuTemperature(),
+    si.osInfo(),
+    si.time(),
+    si.versions(),
+    si.battery().catch(() => null),
+    listContainers()
   ]);
-  const uptime = os.uptime();
-  const bootTime = Date.now() - uptime * 1000;
-  const disks = pickDisks(fs);
+
+  const hostname = os.hostname();
+  const now = new Date();
+
+  const memUsed = mem.active ?? (mem.total - mem.available);
+  const disks = (fs || []).map(d => ({
+    mount: d.mount,
+    size: bytesTo(d.size).pretty,
+    used: bytesTo(d.used).pretty,
+    usage: Math.round(d.use || usePercent(d.used, d.size))
+  }));
+
+  let containers = [];
+  let dockerError = null;
+  if (Array.isArray(docker)) {
+    containers = docker;
+  } else if (docker && Array.isArray(docker.containers)) {
+    containers = docker.containers;
+    dockerError = docker.error || null;
+  }
+
+  const running = containers.filter(c => c.up).length;
+  const stopped = containers.length - running;
 
   return {
-    host: {
-      hostname: os.hostname(),
-      platform: osInfo.platform,
-      distro: osInfo.distro,
-      release: osInfo.release,
+    meta: {
+      hostname,
+      platform: `${osInfo.distro} ${osInfo.release}`,
       kernel: osInfo.kernel,
-      arch: osInfo.arch,
-      node: process.versions.node,
-      time: time,
+      node: versions.node,
+      now: now.toISOString(),
+      tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      dockerError,
+      refreshMs: REFRESH_MS
     },
-    uptime: { seconds: uptime, boot: new Date(bootTime).toISOString() },
     cpu: {
-      manufacturer: cpu.manufacturer,
-      brand: cpu.brand,
+      model: cpu.brand || cpu.manufacturer || "Unknown CPU",
       cores: cpu.cores,
-      physicalCores: cpu.physicalCores,
-      speed: cpu.speed, // GHz
-      load: load.currentload
+      load: Number(load.currentLoad.toFixed(1)),
+      temp: (temp && typeof temp.main === "number") ? Number(temp.main.toFixed(1)) : null
     },
     memory: {
-      total: mem.total,
-      free: mem.free,
-      used: mem.total - mem.free,
-      active: mem.active,
-      available: mem.available
+      total: bytesTo(mem.total).pretty,
+      used: bytesTo(memUsed).pretty,
+      free: bytesTo(mem.available || (mem.total - memUsed)).pretty,
+      usedPct: Number(usePercent(memUsed, mem.total).toFixed(1))
     },
-    disks: disks.map(d => ({
-      fs: d.fs,
-      type: d.type,
-      mount: d.mount,
-      size: d.size,
-      used: d.used,
-      use: d.use
-    }))
+    uptime: {
+      boot: new Date(time.boot * 1000).toISOString(),
+      uptimeSec: time.uptime,
+      kernel: osInfo.kernel
+    },
+    versions: {
+      node: versions.node
+    },
+    disks,
+    docker: {
+      count: containers.length,
+      running,
+      stopped,
+      containers
+    },
   };
 }
 
-// ------ routes ------
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    time: new Date().toISOString(),
-    uptimeSec: process.uptime(),
-    pid: process.pid
+// One-off JSON snapshot (useful for debugging)
+app.get("/api/health", async (_req, res) => {
+  try {
+    const data = await getHealth();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: e.message || String(e) });
+  }
+});
+
+// SSE live stream for the UI
+app.get("/api/stream", async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  const send = async () => {
+    try {
+      const payload = await getHealth();
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    } catch (e) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: e.message || String(e) })}\n\n`);
+    }
+  };
+
+  // Initial retry hint & first payload
+  res.write("retry: 5000\n\n");
+  await send();
+  const iv = setInterval(send, REFRESH_MS);
+
+  req.on("close", () => {
+    clearInterval(iv);
   });
 });
 
-app.get('/api/system', async (_req, res) => {
-  try {
-    const sys = await getSystem();
-    const temp = await getCpuTemp();
-    res.json({ ...sys, temperature: temp });
-  } catch (e) {
-    res.status(500).json({ error: e?.message || String(e) });
-  }
-});
-
-app.get('/api/containers', async (_req, res) => {
-  try {
-    const [ps, info] = await Promise.all([getDockerPs(), getDockerInfo()]);
-    res.json({ list: ps, info });
-  } catch (e) {
-    res.status(500).json({ error: e?.message || String(e) });
-  }
-});
-
-app.get('/api/summary', async (_req, res) => {
-  try {
-    const [sys, temp, dockerPs, dockerInfo] = await Promise.all([
-      getSystem(),
-      getCpuTemp(),
-      getDockerPs(),
-      getDockerInfo()
-    ]);
-    res.json({
-      ok: true,
-      system: sys,
-      temperature: temp,
-      docker: { list: dockerPs, info: dockerInfo }
-    });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e?.message || String(e) });
-  }
-});
-
-// Fallback to UI
-app.get('*', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
-});
-
-const server = app.listen(PORT, HOST, () => {
+const HOST = process.env.HOST || "0.0.0.0";
+const PORT = Number(process.env.PORT || 8080);
+app.listen(PORT, HOST, () => {
   console.log(`[dashboard] listening on ${HOST}:${PORT}`);
 });
-
-function shutdown(signal) {
-  console.log(`[dashboard] received ${signal}, shutting down...`);
-  server.close(err => {
-    if (err) {
-      console.error('Error during shutdown:', err);
-      process.exit(1);
-    } else {
-      process.exit(0);
-    }
-  });
-}
-
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));

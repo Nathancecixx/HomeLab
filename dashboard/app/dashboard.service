@@ -1,34 +1,26 @@
 [Unit]
-Description=BigRedPi Dashboard (Node.js)
-After=network-online.target
+Description=BigRedPi Dashboard
+After=network-online.target docker.service
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=homelab
-Group=homelab
-WorkingDirectory=/srv/homelab/dashboard/app
-Environment=NODE_ENV=production
-EnvironmentFile=/srv/homelab/dashboard/app/.env
-ExecStart=/usr/bin/node /srv/homelab/dashboard/app/server.js
-Restart=on-failure
+User=bigred
+Group=docker
+WorkingDirectory=/home/bigred/bigredpi/dashboard/app
+EnvironmentFile=/home/bigred/bigredpi/dashboard/app/.env
+# Optional: control refresh rate in ms (default 2000)
+Environment=REFRESH_MS=2000
+ExecStart=/usr/bin/node server.js
+Restart=always
 RestartSec=3
-
-# --- Hardening ---
+# Hardening
 NoNewPrivileges=true
-PrivateTmp=true
-PrivateDevices=true
 ProtectSystem=full
 ProtectHome=true
-ProtectKernelModules=true
-ProtectKernelTunables=true
-ProtectControlGroups=true
-RestrictRealtime=true
-LockPersonality=true
-MemoryDenyWriteExecute=true
-CapabilityBoundingSet=
+ReadWritePaths=/home/bigred/bigredpi/dashboard/app
 AmbientCapabilities=
-ReadWritePaths=/srv/homelab/dashboard/app
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=multi-user.target

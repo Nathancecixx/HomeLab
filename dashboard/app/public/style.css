@@ -19,7 +19,6 @@ header, footer{max-width:1100px;margin:0 auto;padding:16px}
 header{display:flex;align-items:center;justify-content:space-between}
 h1{font-size:22px;margin:0}
 .meta{display:flex;gap:12px;align-items:center;color:var(--muted)}
-#refresh{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:8px 12px;cursor:pointer}
 main{max-width:1100px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:16px}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .card{background:var(--panel);border-radius:14px;padding:16px;box-shadow:0 1px 0 rgba(255,255,255,0.04) inset, 0 10px 30px rgba(0,0,0,0.25)}
@@ -31,6 +30,16 @@ th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.08)}
 th{text-align:left;color:var(--muted);font-weight:600}
 .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 footer{color:var(--muted)}
+.muted{color:var(--muted);font-size:12px;margin-top:8px}
+
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+.chip.ok{background:rgba(0,184,148,.15);color:var(--green)}
+.chip.bad{background:rgba(255,118,117,.15);color:var(--red)}
+
+.usage{display:flex;align-items:center;gap:8px}
+.bar{width:100px;height:6px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar > span{display:block;height:100%;background:linear-gradient(90deg, var(--accent), #a3e635)}
+
 @media (max-width: 860px){
   .cards{grid-template-columns:1fr}
 }

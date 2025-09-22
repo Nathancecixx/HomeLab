@@ -11,7 +11,7 @@
     <h1>BigRedPi Dashboard</h1>
     <div class="meta">
       <span id="host"></span>
-      <button id="refresh">Refresh</button>
+      <!-- Auto-updating via SSE, no manual refresh button needed -->
     </div>
   </header>
 
@@ -62,11 +62,12 @@
         </thead>
         <tbody></tbody>
       </table>
+      <div id="docker-error" class="muted"></div>
     </section>
   </main>
 
   <footer>
-    <small>LAN/VPN only. &middot; <span id="last-updated">—</span></small>
+    <small>LAN/VPN only · <span id="last-updated">—</span></small>
   </footer>
 
   <script src="/app.js"></script>

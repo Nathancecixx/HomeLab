@@ -17,8 +17,15 @@ const execp = promisify(exec);
 const app = express();
 app.disable("x-powered-by");
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(compression());
 app.use(morgan("tiny"));
+
+// Disable compression on SSE (api/stream), enable elsewhere
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path === "/api/stream") return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Serve static files (index.html, style.css, app.js) from ./public
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h" }));
@@ -27,8 +34,7 @@ const REFRESH_MS = Number(process.env.REFRESH_MS || 2000);
 
 async function listContainers() {
   try {
-    // --no-trunc to avoid truncated names/images; custom delimiter to parse safely
-    const cmd = 'docker ps --no-trunc --format "{{.Names}}||{{.Image}}||{{.Status}}||{{.Ports}}"' ;
+    const cmd = 'docker ps --no-trunc --format "{{.Names}}||{{.Image}}||{{.Status}}||{{.Ports}}"';
     const { stdout } = await execp(cmd, { timeout: 3000 });
     const lines = stdout.trim().split("\n").filter(Boolean);
     return lines.map(line => {
@@ -37,7 +43,6 @@ async function listContainers() {
       return { name, image, status, ports: ports || "", up: isUp };
     });
   } catch (err) {
-    // Docker might not be installed or user lacks permissions; fail soft
     return { error: err.message, containers: [] };
   }
 }
@@ -54,7 +59,7 @@ function usePercent(used, total) {
 }
 
 async function getHealth() {
-  const [cpu, load, mem, fs, temp, osInfo, time, versions, batteries, docker] = await Promise.all([
+  const [cpu, load, mem, fs, temp, osInfo, time, versions, _batt, docker] = await Promise.all([
     si.cpu(),
     si.currentLoad(),
     si.mem(),
@@ -90,6 +95,12 @@ async function getHealth() {
   const running = containers.filter(c => c.up).length;
   const stopped = containers.length - running;
 
+  // ---- SAFE BOOT TIME ----
+  const uptimeSec = Number(time?.uptime || 0);
+  const bootMs = (typeof time?.boot === "number" && isFinite(time.boot) && time.boot > 0)
+    ? time.boot * 1000
+    : Date.now() - (uptimeSec * 1000);
+
   return {
     meta: {
       hostname,
@@ -114,13 +125,11 @@ async function getHealth() {
       usedPct: Number(usePercent(memUsed, mem.total).toFixed(1))
     },
     uptime: {
-      boot: new Date(time.boot * 1000).toISOString(),
-      uptimeSec: time.uptime,
+      boot: new Date(bootMs).toISOString(),
+      uptimeSec: uptimeSec,
       kernel: osInfo.kernel
     },
-    versions: {
-      node: versions.node
-    },
+    versions: { node: versions.node },
     disks,
     docker: {
       count: containers.length,
@@ -141,12 +150,16 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-// SSE live stream for the UI
+// SSE live stream for the UI (no compression, keep-alive friendly)
 app.get("/api/stream", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform"); // prevent proxies from buffering/changing
   res.setHeader("Connection", "keep-alive");
-  res.flushHeaders?.();
+  res.setHeader("X-Accel-Buffering", "no"); // nginx hint
+  res.setHeader("Keep-Alive", "timeout=60, max=1000");
+
+  // initial retry hint
+  res.write("retry: 5000\n\n");
 
   const send = async () => {
     try {
@@ -157,13 +170,17 @@ app.get("/api/stream", async (req, res) => {
     }
   };
 
-  // Initial retry hint & first payload
-  res.write("retry: 5000\n\n");
+  // heartbeat to keep intermediaries happy
+  const hb = setInterval(() => {
+    res.write(`: hb ${Date.now()}\n\n`);
+  }, 15000);
+
   await send();
   const iv = setInterval(send, REFRESH_MS);
 
   req.on("close", () => {
     clearInterval(iv);
+    clearInterval(hb);
   });
 });
 

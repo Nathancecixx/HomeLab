@@ -1,0 +1,37 @@
+name: node-bitcoin
+
+networks:
+  btcnet:
+    driver: bridge
+
+volumes:
+  tor_data:
+
+services:
+  tor:
+    build:
+      context: ./tor
+    container_name: tor
+    restart: unless-stopped
+    networks: [btcnet]
+    volumes:
+      - ./torrc:/etc/tor/torrc:ro
+      - tor_data:/var/lib/tor
+
+  bitcoind:
+    image: lncm/bitcoind:v28.0
+    container_name: bitcoind
+    user: "1000:1000"
+    restart: unless-stopped
+    stop_grace_period: 5m
+    depends_on:
+      - tor
+    networks: [btcnet]
+    ports:
+      - "127.0.0.1:8332:8332"
+    volumes:
+      - /srv/storage/bitcoin:/data/.bitcoin
+    command:
+      - "-conf=/data/.bitcoin/bitcoin.conf"
+      - "-datadir=/data/.bitcoin"
+      - "-printtoconsole"

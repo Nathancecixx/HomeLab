@@ -1,0 +1,16 @@
+# ---- Tor for Bitcoin Core ----
+Log notice stdout
+DataDirectory /var/lib/tor
+
+# SOCKS5 proxy that Bitcoin Core uses for ALL outbound connections
+SocksPort 0.0.0.0:9050
+
+# Optional control port (we're not using ephemeral onion, but leave it available)
+ControlPort 9051
+CookieAuthentication 1
+CookieAuthFile /var/lib/tor/control_auth_cookie
+
+# Onion service for inbound P2P into bitcoind
+HiddenServiceDir /var/lib/tor/hidden_service
+HiddenServiceVersion 3
+HiddenServicePort 8333 bitcoind:8333

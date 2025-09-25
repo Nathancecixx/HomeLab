@@ -1,0 +1,41 @@
+name: zim-server
+
+services:
+  # --- fetch ZIMs into /srv/storage/zim --------------------------
+  zim-fetcher:
+    image: alpine:3.20
+    container_name: zim-fetcher
+    restart: "no"
+    environment:
+      TZ: America/Toronto
+      MIRROR_BASE: "https://download.kiwix.org/zim"
+      # Use exact, existing filenames. Edit to taste.
+      ZIM_LIST: >
+        wikipedia/wikipedia_en_all_nopic_2025-08.zim,
+        wiktionary/wiktionary_en_all_nopic_2025-08.zim,
+        wikinews/wikinews_en_all_maxi_2025-08.zim,
+        wikibooks/wikibooks_en_all_maxi_2025-08.zim
+    volumes:
+      - /srv/storage/zim:/data
+    command: ["/bin/sh","-c","set -e; apk add --no-cache wget ca-certificates; mkdir -p /data; LIST=$(echo $$ZIM_LIST | tr ',' ' '); for ITEM in $$LIST; do ITEM=$(echo $$ITEM | xargs); [ -z \"$$ITEM\" ] && continue; URL=\"$$MIRROR_BASE/$$ITEM\"; echo \">> Checking: $$URL\"; if ! wget --spider -q \"$$URL\"; then echo \"!! Not found (skipping): $$URL\"; continue; fi; echo \">> Downloading/updating: $$URL\"; wget -c --timestamping -P /data \"$$URL\"; done; echo \"== ZIM fetching complete ==\"; ls -lh /data/*.zim || true"]
+
+
+  # --- Serve ZIMs over LAN --------------------------------------------------
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:3.7.0
+    container_name: kiwix
+    restart: unless-stopped
+    ports: ["8082:8080"]      # browse at http://<pi-ip>:8082
+    volumes:
+      - /srv/storage/zim:/data:ro
+    # Use the image's entrypoint (kiwix-serve) and pass ONLY the ZIM paths
+    command:
+      - "/data/wikipedia_en_all_nopic_2025-08.zim"
+      - "/data/wiktionary_en_all_nopic_2025-08.zim"
+      - "/data/wikinews_en_all_maxi_2025-08.zim"
+      - "/data/wikibooks_en_all_maxi_2025-08.zim"
+    healthcheck:
+      test: ["CMD-SHELL","wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

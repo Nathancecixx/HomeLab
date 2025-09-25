@@ -7,6 +7,7 @@
 > * **Bitcoin Core** (Docker) — pruned/full node with optional **Tor** sidecar for onion P2P
 > * **Nextcloud** (Docker) — personal cloud (LAN/VPN‑only)
 > * **Storage Pool (mergerfs + SnapRAID)** — simple, grow‑as‑you‑go pooled storage across multiple USB SSDs with optional parity/bit‑rot protection
+> * **Offline Knowledge (ZIM Server)** — local **Kiwix** server for offline Wikipedia, Wiktionary, etc. (LAN/VPN‑only)
 >
 > Security by default: **only UDP 51820 (WireGuard)** is exposed via router port‑forward. All other web UIs are **LAN/VPN‑only**.
 
@@ -23,45 +24,36 @@
 [![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=for-the-badge\&logo=nextcloud\&logoColor=white)](https://nextcloud.com)
 [![mergerfs](https://img.shields.io/badge/mergerfs-pooling-6E7B8B?style=for-the-badge)](https://github.com/trapexit/mergerfs)
 [![SnapRAID](https://img.shields.io/badge/SnapRAID-parity%20%2B%20scrub-2E8B57?style=for-the-badge)](https://www.snapraid.it/)
+[![Kiwix](https://img.shields.io/badge/Kiwix-ZIM%20server-0f6db3?style=for-the-badge)](https://kiwix.org)
 
 </div>
 
 ---
 
-## Project Overview <a name="project-overview"></a>
+## Project Overview
 
 ![Dashboard Screenshot](docs/screenshot-dashboard.png)
 
 ### Key Features
 
-* **Modular by design**: start with **Dashboard + VPN**; add **Bitcoin Core**, **Nextcloud**, and/or the **Storage Pool** later. You can run **any subset** of modules.
+* **Modular by design**: start with **Dashboard + VPN**; add **Bitcoin Core**, **Nextcloud**, **Offline Knowledge**, and/or the **Storage Pool** later. You can run **any subset** of modules.
 * **Secure defaults**: LAN/VPN‑only web UIs, strong `.env` secrets, no public HTTP ports.
 * **Clean UI**: SSE‑powered dashboard—live CPU/temp, memory, disks, Docker containers.
 * **Easy VPN**: containerized WireGuard with QR codes for mobile peers.
 * **Bitcoiner‑ready**: pruned or full node, optional Tor onion service for P2P; RPC stays private on LAN/VPN.
 * **Grow‑as‑you‑go storage**: **mergerfs** pools mismatched SSDs into one path; add **SnapRAID** for nightly parity and bit‑rot scrubbing.
+* **Offline knowledge**: host **Kiwix** with Wikipedia/Wiktionary/etc. ZIMs; browse locally at `:8082`.
 
 ---
 
-## Technology Stack <a name="technology-stack"></a>
+## Technology Stack
 
-[![HTML](https://img.shields.io/badge/HTML-1572B6?style=for-the-badge\&logo=html5\&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
-[![CSS](https://img.shields.io/badge/CSS-1572B6?style=for-the-badge\&logo=css3\&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
-[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge\&logo=javascript\&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-[![Node](https://img.shields.io/badge/Node.js-%E2%89%A520-43853D?style=for-the-badge\&logo=node.js\&logoColor=white)](https://nodejs.org)
-[![Express](https://img.shields.io/badge/Express-4.x-black?style=for-the-badge\&logo=express\&logoColor=white)](https://expressjs.com)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge\&logo=docker\&logoColor=white)](https://www.docker.com)
-[![WireGuard](https://img.shields.io/badge/WireGuard-88171A?style=for-the-badge\&logo=wireguard\&logoColor=white)](https://www.wireguard.com)
-[![Bitcoin Core](https://img.shields.io/badge/Bitcoin%20Core-FF9900?style=for-the-badge\&logo=bitcoin\&logoColor=white)](https://bitcoincore.org)
-[![Tor](https://img.shields.io/badge/Tor-7D4698?style=for-the-badge\&logo=torproject\&logoColor=white)](https://torproject.org)
-[![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=for-the-badge\&logo=nextcloud\&logoColor=white)](https://nextcloud.com)
-[![mergerfs](https://img.shields.io/badge/mergerfs-fuse-6E7B8B?style=for-the-badge)](https://github.com/trapexit/mergerfs)
-[![SnapRAID](https://img.shields.io/badge/SnapRAID-parity-2E8B57?style=for-the-badge)](https://www.snapraid.it/)
+[Badges omitted here; see header.]
 
 **Dependencies**
 
 * Node ≥ 20, Docker Engine + Compose, UFW
-* For dashboard UI: `express`, `helmet`, `compression`, `morgan`, `systeminformation`
+* Dashboard server deps: `express`, `helmet`, `compression`, `morgan`, `systeminformation`
 
 ---
 
@@ -73,11 +65,11 @@ repo/
 ├─ server.js                 # Express server (serves ./public + SSE /api/stream)
 ├─ index.html  style.css  app.js  # UI (should live under ./public/)
 ├─ dashboard.service         # systemd unit (edit user/paths)
-├─ docker-compose.yml        # Compose for VPN/Bitcoin/Nextcloud (modules are optional)
-├─ Dockerfile  torrc  start-tor.sh  # Tor sidecar (Bitcoin Core onion P2P)
-├─ .env                      # Global/env snippets (see module sections)
+├─ docker-compose.yml        # Compose for all modules (pick the services you want)
+├─ Dockerfile  torrc  start-tor.sh  # Tor sidecar for Bitcoin Core onion P2P
+├─ .env                      # Per-module env snippets (examples below)
 ├─ Makefile                  # Optional convenience targets
-└─ docs/screenshot-dashboard.png (add your own screenshot)
+└─ docs/screenshot-dashboard.png
 ```
 
 > **Important:** `server.js` serves **`./public`** — create that folder and move `index.html`, `style.css`, and `app.js` into it.
@@ -93,7 +85,7 @@ repo/
 
 ---
 
-## Getting Started <a name="getting-started"></a>
+## Getting Started
 
 1. **Put files on the Pi** (example path):
 
@@ -115,6 +107,8 @@ repo/
    sudo ufw default deny incoming
    sudo ufw default allow outgoing
    sudo ufw allow from 192.168.40.0/24 to any port 8080 proto tcp   # Dashboard
+   sudo ufw allow from 192.168.40.0/24 to any port 8081 proto tcp   # Nextcloud
+   sudo ufw allow from 192.168.40.0/24 to any port 8082 proto tcp   # Kiwix (ZIM server)
    sudo ufw allow 51820/udp                                          # WireGuard
    sudo ufw enable
    sudo ufw status
@@ -223,7 +217,8 @@ sudo crontab -e
 Add:
 
 ```
-# Nightly: scrub 12% then sync at 02:30\ n30 2 * * * /usr/bin/snapraid scrub -p 12 && /usr/bin/snapraid sync
+# Nightly: scrub 12% then sync at 02:30
+30 2 * * * /usr/bin/snapraid scrub -p 12 && /usr/bin/snapraid sync
 ```
 
 > **Restore from a failed disk:** replace the disk, mount it at the same path/label, then `snapraid -e fix`. See SnapRAID docs for recovery flow.
@@ -248,8 +243,6 @@ services:
 ---
 
 ## Modules (all optional)
-
-Each module below is **opt‑in**. Start only the services you want.
 
 ### 1) WireGuard VPN (Docker)
 
@@ -419,25 +412,94 @@ nextcloud:
 
 ---
 
+### 4) Offline Knowledge (ZIM Server)
+
+Serve offline copies of knowledge bases (Wikipedia, Wiktionary, Wikinews, Wikibooks) over your LAN/VPN. This module has **two services**:
+
+* **`zim-fetcher`** — one-shot helper to download/update ZIM files into `/srv/offline/zim`
+* **`kiwix`** — **Kiwix** HTTP server that serves the ZIMs at `http://<pi-ip>:8082/`
+
+**Compose (reference)**
+
+```yaml
+# --- 0) One-shot: fetch ZIMs into /srv/offline/zim --------------------------
+zim-fetcher:
+  image: alpine:3.20
+  container_name: zim-fetcher
+  restart: "no"
+  environment:
+    TZ: America/Toronto
+    MIRROR_BASE: "https://download.kiwix.org/zim"
+    # Use exact, existing filenames. Edit to taste.
+    ZIM_LIST: >
+      wikipedia/wikipedia_en_all_nopic_2025-08.zim,
+      wiktionary/wiktionary_en_all_nopic_2025-08.zim,
+      wikinews/wikinews_en_all_maxi_2025-08.zim,
+      wikibooks/wikibooks_en_all_maxi_2025-08.zim
+  volumes:
+    - /srv/offline/zim:/data
+  command: ["/bin/sh","-c","set -e; apk add --no-cache wget ca-certificates; mkdir -p /data; LIST=$(echo $$ZIM_LIST | tr ',' ' '); for ITEM in $$LIST; do ITEM=$(echo $$ITEM | xargs); [ -z \"$$ITEM\" ] && continue; URL=\"$$MIRROR_BASE/$$ITEM\"; echo \">> Checking: $$URL\"; if ! wget --spider -q \"$$URL\"; then echo \"!! Not found (skipping): $$URL\"; continue; fi; echo \">> Downloading/updating: $$URL\"; wget -c --timestamping -P /data \"$$URL\"; done; echo \"== ZIM fetching complete ==\"; ls -lh /data/*.zim || true"]
+
+# --- 1) Serve ZIMs over LAN --------------------------------------------------
+kiwix:
+  image: ghcr.io/kiwix/kiwix-serve:3.7.0
+  container_name: kiwix
+  restart: unless-stopped
+  ports: ["8082:8080"]      # browse at http://<pi-ip>:8082
+  volumes:
+    - /srv/offline/zim:/data:ro
+  command:
+    - "/data/wikipedia_en_all_nopic_2025-08.zim"
+    - "/data/wiktionary_en_all_nopic_2025-08.zim"
+    - "/data/wikinews_en_all_maxi_2025-08.zim"
+    - "/data/wikibooks_en_all_maxi_2025-08.zim"
+  healthcheck:
+    test: ["CMD-SHELL","wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1"]
+    interval: 30s
+    timeout: 5s
+    retries: 5
+```
+
+**Usage**
+
+```bash
+# 1) Create the data folder (host)
+sudo mkdir -p /srv/offline/zim
+
+# 2) Download or update ZIMs (run on demand)
+docker compose up --build zim-fetcher && docker compose rm -f zim-fetcher
+
+# 3) Serve them on LAN/VPN
+docker compose up -d kiwix
+# Open http://<PI_LAN_IP>:8082/
+```
+
+> Keep **8082** LAN/VPN-only via UFW (see firewall section). You can add/remove ZIM files later—just update the `kiwix` `command` list to include the files you want indexed on boot.
+
+---
+
 ## Common Commands
 
 ```bash
 # Start only what you want
 docker compose up -d wireguard
-# or
 docker compose up -d tor bitcoind
-# or
 docker compose up -d nextcloud-db nextcloud-redis nextcloud
+docker compose up -d kiwix
+
+# One-shot ZIM update
+docker compose up zim-fetcher
 
 # Stop modules
-docker compose stop bitcoind
+docker compose stop bitcoind kiwix
 
 # Logs
 journalctl -u dashboard -e
 docker logs -f wireguard
 docker logs -f bitcoind
+docker logs -f kiwix
 
-# Updates
+# Updates (images)
 docker compose pull && docker compose up -d
 ```
 
@@ -448,17 +510,17 @@ docker compose pull && docker compose up -d
 **Dashboard**
 
 * `systemctl status dashboard` / `journalctl -u dashboard -e`
-* Ensure `public/` exists next to `server.js` and contains UI files.
+* Ensure `public/` exists and contains UI files.
 
 **WireGuard**
 
-* Router must port‑forward **UDP 51820** to the Pi.
+* Router must port‑forward **UDP 51820** to the Pi.
 * Show peer QR: `docker exec -it wireguard /app/show-peer phone`.
 * If connected but can’t reach LAN, confirm client `AllowedIPs` include your LAN (e.g., `192.168.40.0/24`).
 
 **Bitcoin Core**
 
-* Prune size too small → frequent re‑downloads; set `PRUNE` ≥ `100000` (\~100 GB target).
+* Prune size too small → frequent re‑downloads; set `PRUNE` ≥ `100000` (~100 GB target).
 * Slow IBD → increase `DBCACHE` (within RAM limits) and ensure SSD storage under `/srv/storage/bitcoin`.
 * Onion unreachable → check Tor volume perms (`/srv/tor/var-lib-tor` owned by root inside container, mode 0700).
 
@@ -466,6 +528,12 @@ docker compose pull && docker compose up -d
 
 * Check logs: `docker logs nextcloud nextcloud-db nextcloud-redis`.
 * Add proper `trusted_domains` and keep port 8081 LAN/VPN‑only.
+
+**ZIM Server (Kiwix)**
+
+* `docker logs -f kiwix` to confirm it indexed all paths.
+* If a ZIM doesn’t appear, verify its exact filename in `kiwix` `command` list and that it exists under `/srv/offline/zim`.
+* Use `zim-fetcher` periodically to update ZIMs with `--timestamping`.
 
 **Storage (mergerfs/SnapRAID)**
 
@@ -476,10 +544,10 @@ docker compose pull && docker compose up -d
 
 ## Maintenance & Security Checklist
 
-* Keep **8080/8081** un‑forwarded on the router; allow LAN/VPN only via UFW.
+* Keep **8080/8081/8082** un‑forwarded on the router; allow LAN/VPN only via UFW.
 * Use **strong, unique** secrets in `.env` files; never commit them to git.
 * Periodically `docker compose pull && docker compose up -d`.
-* Back up persistent volumes: `/srv/storage/bitcoin`, `/srv/storage/nextcloud`, and your repo configs.
+* Back up persistent volumes: `/srv/storage/bitcoin`, `/srv/storage/nextcloud`, `/srv/offline/zim`, and your repo configs.
 * Schedule SnapRAID `scrub` + `sync` and check logs monthly.
 
 ---
@@ -487,7 +555,3 @@ docker compose pull && docker compose up -d
 ## License
 
 This project is licensed under the **MIT License** — add a `LICENSE` file with the full text if you haven’t already.
-
----
-
-**You’re ready to roll.** Stand up the storage pool first (mergerfs + SnapRAID), point services at `/srv/storage`, start the VPN and dashboard, then flip on Bitcoin Core or Nextcloud whenever you want—everything is optional.

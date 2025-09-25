@@ -1,0 +1,8 @@
+{
+"service": "nextcloud",
+"display": "Nextcloud",
+"group": "apps",
+"envKeys": ["DB_ROOT_PASSWORD", "DB_PASSWORD", "TZ"],
+"actions": ["up", "start", "stop", "restart", "pull", "build", "rm"],
+"docs": "Personal cloud"
+}

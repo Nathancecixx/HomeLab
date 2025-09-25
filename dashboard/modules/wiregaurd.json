@@ -1,0 +1,8 @@
+{
+"service": "wireguard",
+"display": "WireGuard VPN",
+"group": "network",
+"envKeys": ["SERVERURL", "SERVERPORT", "PEERS", "PEERDNS", "INTERNAL_SUBNET", "TZ"],
+"actions": ["up", "start", "stop", "restart", "pull", "build", "rm"],
+"docs": "Secure remote access into your LAN"
+}

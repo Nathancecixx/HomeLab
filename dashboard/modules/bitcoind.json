@@ -1,0 +1,8 @@
+{
+"service": "bitcoind",
+"display": "Bitcoin Core",
+"group": "apps",
+"envKeys": ["PRUNE", "DBCACHE", "MAX_CONNECTIONS", "RPC_USER", "RPC_PASSWORD", "TZ"],
+"actions": ["up", "start", "stop", "restart", "pull", "build", "rm"],
+"docs": "Pruned/full node with optional Tor"
+}

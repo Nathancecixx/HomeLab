@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BigRedPi · Admin</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/admin/assets/admin.css" />
+</head>
+<body>
+  <header>
+    <h1>Admin</h1>
+    <div class="meta"><span class="pill">Protected</span></div>
+  </header>
+
+  <main id="admin-root" style="min-height:40vh">
+    <!-- JS will either show login modal or render the protected shell -->
+  </main>
+
+  <!-- Login Modal (hidden until needed) -->
+  <div class="modal" id="login-modal" style="display:none">
+    <div class="panel">
+      <h3>Administrator Login</h3>
+      <p class="muted">Enter the admin password to continue.</p>
+      <div class="kv-grid">
+        <div class="group" style="grid-column:1/-1">
+          <label for="pw">Password</label>
+          <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+      </div>
+      <div class="row gap" style="margin-top:12px">
+        <button class="btn" id="btn-cancel">Cancel</button>
+        <button class="btn ok" id="btn-login">Login</button>
+      </div>
+      <div class="muted" id="login-err" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script src="/admin/assets/admin.js"></script>
+</body>
+</html>

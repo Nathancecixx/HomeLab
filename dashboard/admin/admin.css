@@ -1,0 +1,20 @@
+:root { --panel-2:#0e141d }
+
+.row{display:flex;align-items:center;justify-content:space-between}
+.row.gap{gap:10px}
+.btn{padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer}
+.btn:hover{border-color:rgba(125,211,252,.35)}
+.btn.ok{background:rgba(0,184,148,.15);color:var(--green)}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.panel{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;max-width:360px;width:90%}
+
+.kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv-grid .group{display:flex;flex-direction:column;gap:6px}
+.kv-grid label{font-size:12px;color:var(--muted)}
+.kv-grid input{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:var(--text)}
+@media (max-width:640px){ .kv-grid{grid-template-columns:1fr} }
+
+.chip{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.1);font-size:12px}
+.chip.ok{background:rgba(0,184,148,.15);color:var(--green);border-color:rgba(0,184,148,.35)}
+.chip.bad{background:rgba(255,99,71,.15);color:#ff7961;border-color:rgba(255,99,71,.35)}

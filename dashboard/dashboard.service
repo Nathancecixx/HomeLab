@@ -1,26 +1,30 @@
 [Unit]
-Description=BigRedPi Dashboard
+Description=BigRedPi Admin Dashboard
 After=network-online.target docker.service
 Wants=network-online.target
 
+
 [Service]
 Type=simple
-User=bigred
-Group=docker
-WorkingDirectory=/home/bigred/bigredpi/dashboard/app
-EnvironmentFile=/home/bigred/bigredpi/dashboard/app/.env
-# Optional: control refresh rate in ms (default 2000)
-Environment=REFRESH_MS=2000
+WorkingDirectory=/home/bigred/bigredpi/dashboard
+Environment=NODE_ENV=production
+EnvironmentFile=/home/bigred/bigredpi/dashboard/.env
 ExecStart=/usr/bin/node server.js
-Restart=always
+
+Restart=on-failure
 RestartSec=3
+
+User=bigred
+Group=bigred
+
 # Hardening
-NoNewPrivileges=true
-ProtectSystem=full
-ProtectHome=true
-ReadWritePaths=/home/bigred/bigredpi/dashboard/app
 AmbientCapabilities=
-CapabilityBoundingSet=
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=no
+ProtectSystem=full
+ReadWritePaths=/home/bigred/bigredpi/dashboard
+
 
 [Install]
 WantedBy=multi-user.target

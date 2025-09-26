@@ -14,62 +14,79 @@
     <span id="host"></span>
     <span class="pill">Live</span>
   </div>
+  <a class="admin-btn" href="/admin" target="_blank" rel="noopener noreferrer" aria-label="Open Admin Panel">
+    <span class="admin-icon">⚙️</span>
+    <span class="admin-text">
+      <strong>Admin</strong>
+      <small>/admin</small>
+    </span>
+  </a>
 </header>
-  <main>
-    <section class="cards">
-      <div class="card">
-        <h2>CPU</h2>
-        <div class="kv"><span>Model</span><span id="cpu-model">—</span></div>
-        <div class="kv"><span>Cores</span><span id="cpu-cores">—</span></div>
-        <div class="kv"><span>Load</span><span id="cpu-load">—</span></div>
-        <div class="kv"><span>Temp</span><span id="cpu-temp">—</span></div>
-      </div>
 
-      <div class="card">
-        <h2>Memory</h2>
-        <div class="kv"><span>Total</span><span id="mem-total">—</span></div>
-        <div class="kv"><span>Used</span><span id="mem-used">—</span></div>
-        <div class="kv"><span>Free</span><span id="mem-free">—</span></div>
-      </div>
+<main>
+  <section class="cards">
+    <div class="card">
+      <h2>CPU</h2>
+      <div class="kv"><span>Model</span><span id="cpu-model">—</span></div>
+      <div class="kv"><span>Cores</span><span id="cpu-cores">—</span></div>
+      <div class="kv"><span>Load</span><span id="cpu-load">—</span></div>
+      <div class="kv"><span>Temp</span><span id="cpu-temp">—</span></div>
+    </div>
 
-      <div class="card">
-        <h2>Uptime</h2>
-        <div class="kv"><span>Boot</span><span id="boot-time">—</span></div>
-        <div class="kv"><span>Uptime</span><span id="uptime">—</span></div>
-        <div class="kv"><span>Kernel</span><span id="kernel">—</span></div>
-        <div class="kv"><span>Node</span><span id="node">—</span></div>
-      </div>
-    </section>
+    <div class="card">
+      <h2>Memory</h2>
+      <div class="kv"><span>Total</span><span id="mem-total">—</span></div>
+      <div class="kv"><span>Used</span><span id="mem-used">—</span></div>
+      <div class="kv"><span>Free</span><span id="mem-free">—</span></div>
+    </div>
 
-    <section class="disks card">
-      <h2>Disks</h2>
-      <table id="disks">
-        <thead>
-          <tr><th>Mount</th><th>Size</th><th>Used</th><th>Usage</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+    <div class="card">
+      <h2>Uptime</h2>
+      <div class="kv"><span>Boot</span><span id="boot-time">—</span></div>
+      <div class="kv"><span>Uptime</span><span id="uptime">—</span></div>
+      <div class="kv"><span>Kernel</span><span id="kernel">—</span></div>
+      <div class="kv"><span>Node</span><span id="node">—</span></div>
+    </div>
+  </section>
 
-    <section class="docker card">
-      <div class="row">
-        <h2>Docker</h2>
-        <span id="docker-meta"></span>
-      </div>
-      <table id="containers">
-        <thead>
-          <tr><th>Name</th><th>Image</th><th>Status</th><th>Ports</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="docker-error" class="muted"></div>
-    </section>
-  </main>
+  <!-- NEW: Apps section (auto-populated buttons) -->
+  <section class="card" id="apps-card" style="display:none">
+    <div class="row">
+      <h2>Apps</h2>
+      <span id="apps-count" class="muted"></span>
+    </div>
+    <div id="apps" class="svc-grid"></div>
+  </section>
 
-  <footer>
-    <small>LAN/VPN only · <span id="last-updated">—</span></small>
-  </footer>
+  <section class="disks card">
+    <h2>Disks</h2>
+    <table id="disks">
+      <thead>
+        <tr><th>Mount</th><th>Size</th><th>Used</th><th>Usage</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
 
-  <script src="/app.js"></script>
+  <section class="docker card">
+    <div class="row">
+      <h2>Docker</h2>
+      <span id="docker-meta"></span>
+    </div>
+    <table id="containers">
+      <thead>
+        <tr><th>Name</th><th>Image</th><th>Status</th><th>Ports</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="docker-error" class="muted"></div>
+  </section>
+</main>
+
+<footer>
+  <small>LAN/VPN only · <span id="last-updated">—</span></small>
+</footer>
+
+<script src="/app.js"></script>
 </body>
 </html>

@@ -5,11 +5,6 @@
 //
 // Start:
 //   HOST=0.0.0.0 PORT=8080 node server.js
-//
-// Notes:
-// - Admin password: set ADMIN_PASSWORD or ADMIN_PASSWORD_BCRYPT in .env
-// - Sessions: httpOnly cookie, sameSite=Lax; secure when NODE_ENV=production
-// - Login is rate-limited. Protected APIs require session auth.
 
 import "dotenv/config";
 import express from "express";
@@ -130,6 +125,60 @@ function cryptoSafeEqual(a, b) {
   return diff === 0;
 }
 
+//---------- Networking ----------
+// Build network list with totals + identity (works with systeminformation)
+async function getNetworkInfo(si){
+  const [ifs, stats] = await Promise.all([
+    si.networkInterfaces(),
+    si.networkStats()  // array of { iface, rx_bytes, tx_bytes, ... }
+  ]);
+
+  const byIfaceStat = new Map();
+  for (const s of stats) {
+    // Some builds expose s.ifaceName; normalize to s.iface
+    const name = s.iface || s.ifaceName || s.ifaceid || s.interface || s.nic || s?.operstate?.iface || "";
+    if (!name) continue;
+    byIfaceStat.set(name, s);
+  }
+
+  // Merge identities (IP/MAC/speed) with counters (rx/tx bytes)
+  const list = ifs.map(i => {
+    const s = byIfaceStat.get(i.iface) || {};
+    return {
+      name: i.iface,
+      ip4: i.ip4 || i.ipv4 || "",
+      mac: i.mac || "",
+      speed_mbps: i.speed || null,
+      driver: i.type || "",
+
+      // totals expected by the frontend
+      rx_bytes: s.rx_bytes ?? s.rxBytes ?? s.rx ?? 0,
+      tx_bytes: s.tx_bytes ?? s.txBytes ?? s.tx ?? 0,
+    };
+  });
+
+  // Fallback: if networkStats returned extra ifaces not in networkInterfaces
+  for (const [name, s] of byIfaceStat) {
+    if (!list.find(x => x.name === name)) {
+      list.push({
+        name,
+        ip4: "",
+        mac: "",
+        speed_mbps: null,
+        driver: "",
+        rx_bytes: s.rx_bytes ?? s.rxBytes ?? s.rx ?? 0,
+        tx_bytes: s.tx_bytes ?? s.txBytes ?? s.tx ?? 0,
+      });
+    }
+  }
+
+  // Only keep useful ones (have any totals or an IP/MAC)
+  return list.filter(n => (n.rx_bytes || n.tx_bytes || n.ip4 || n.mac));
+}
+
+
+
+
 // ---------- System / Docker helpers ----------
 async function listContainers() {
   try {
@@ -170,6 +219,8 @@ async function getHealth() {
     si.versions(),
     listContainers(),
   ]);
+
+  const netList = await getNetworkInfo(si);
 
   const hostname = os.hostname();
   const now = new Date();
@@ -236,6 +287,7 @@ async function getHealth() {
       stopped,
       containers,
     },
+    net: netList,
   };
 }
 
@@ -412,7 +464,7 @@ app.put("/api/admin/services/:id/env", requireJwt, async (req, res) => {
     await fsp.writeFile(svc.envPath, text, "utf8");
     ok(res, { ok: true });
   } catch (e) {
-    console.error("[ENV SAVE ERROR]", e);
+    console.error("[ENV SAVE ERROR]", e); // 👈 log the real error once
     const msg =
       e?.code === "EROFS" ? `Filesystem is read-only at ${svc.envPath}.`
     : e?.code === "EACCES" || e?.code === "EPERM" ? `Permission denied writing ${svc.envPath} (uid=${process.getuid?.()}).`

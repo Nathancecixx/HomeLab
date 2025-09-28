@@ -1,3 +1,5 @@
+//auth + services table + env editor
+
 const TOK_KEY = "brp.jwt";
 
 function getToken() {

@@ -68,6 +68,39 @@
     </table>
   </section>
 
+  <!-- Networking (live graph) -->
+  <section class="network card" id="net-card" style="display:none">
+    <div class="row">
+      <h2>Networking</h2>
+      <div class="net-meta">
+        <select id="net-iface" aria-label="Select network interface"></select>
+        <span id="net-ip" class="pill"></span>
+        <span id="net-speed" class="pill"></span>
+      </div>
+    </div>
+
+    <div class="net-grid">
+      <div class="net-graph-wrap">
+        <canvas id="net-graph" width="600" height="200" aria-label="Network throughput graph"></canvas>
+        <div class="legend">
+          <span class="legend-item"><i class="legend-line legend-up"></i> Upload</span>
+          <span class="legend-item"><i class="legend-line legend-down"></i> Download</span>
+        </div>
+      </div>
+      <div class="net-stats">
+        <div class="kv"><span>Current Upload</span><span id="net-up-now">—</span></div>
+        <div class="kv"><span>Current Download</span><span id="net-down-now">—</span></div>
+        <div class="kv"><span>Peak Upload</span><span id="net-up-peak">—</span></div>
+        <div class="kv"><span>Peak Download</span><span id="net-down-peak">—</span></div>
+        <div class="kv"><span>Total Sent</span><span id="net-tx-total">—</span></div>
+        <div class="kv"><span>Total Received</span><span id="net-rx-total">—</span></div>
+        <div class="kv"><span>MAC</span><span id="net-mac">—</span></div>
+        <div class="kv"><span>Driver / Speed</span><span id="net-driver">—</span></div>
+      </div>
+    </div>
+  </section>
+
+
   <section class="docker card">
     <div class="row">
       <h2>Docker</h2>

@@ -30,6 +30,22 @@ export const SERVICES = [
     project: "kiwix",
     make: { start: "up", stop: "down", restart: "restart" },
   },
+  {
+    id: "bitcoind",
+    label: "Bitcoin Node",
+    dir: R("node-bitcoin"),
+    envPath: R("node-bitcoin", ".env"),
+    project: "bitcoind",
+    make: { start: "up", stop: "down", restart: "restart" },
+  },
+  {
+    id: "btc-explorer",
+    label: "Bitcoin Explorer",
+    dir: R("explorer-bitcoin"),
+    envPath: R("explorer-bitcoin", ".env"),
+    project: "btc-rpc-explorer",
+    make: { start: "up", stop: "down", restart: "restart" },
+  },
 ];
 
 export function getService(id) {

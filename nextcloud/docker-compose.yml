@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   db:
     image: mariadb:10.11
@@ -42,7 +41,6 @@ services:
       - REDIS_HOST_PASSWORD=${REDIS_PASSWORD}
       - PHP_MEMORY_LIMIT=512M
       - TZ=${TZ}
-      - TRUSTED_DOMAINS=nextcloud.local 192.168.1.50
     volumes:
       # app code + config
       - /srv/storage/nextcloud/app:/var/www/html
@@ -57,3 +55,4 @@ networks:
   internal:
     driver: bridge
     internal: true
+    

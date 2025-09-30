@@ -336,6 +336,8 @@ sudo crontab -e
 30 2 * * * /usr/bin/snapraid scrub -p 12 && /usr/bin/snapraid sync
 ```
 
+> **Restore from a failed disk:** replace the disk, mount it at the same path/label, then `snapraid -e fix`. See SnapRAID docs for recovery flow.
+
 > **Parity math:** usable capacity = sum of **data** disks only. Parity disk doesn’t contribute capacity. If you later add larger data disks, first upgrade parity so it’s ≥ the largest data disk.
 
 ---
@@ -358,11 +360,10 @@ docker compose up -d nextcloud-db nextcloud-redis nextcloud
 docker compose up -d kiwix
 ```
 
-> All persistent data lives under `/srv/storage/...` (and `/srv/offline/zim` for Kiwix). Create those folders first and `chown` them to your user if needed.
+> All persistent data lives under `/srv/storage/...`
 
 ```bash
-sudo mkdir -p /srv/storage/bitcoin /srv/storage/nextcloud /srv/offline/zim
-sudo chown -R $USER:$USER /srv/storage/* /srv/offline/zim
+sudo mkdir -p /srv/storage/bitcoin /srv/storage/nextcloud /srv/storage/zim
 ```
 
 ---
@@ -374,112 +375,7 @@ sudo chown -R $USER:$USER /srv/storage/* /srv/offline/zim
 * `df -h /srv/storage` reflects the sum of pooled disks
 * If SnapRAID is enabled, `sudo snapraid status` shows **synced** and scrubs completing periodically
 
-> **Backups still matter.** Keep a copy of irreplaceable data (photos/docs) off‑box (another disk or cloud). RAID ≠ backup.
 
-
-**Goal:** Treat multiple USB SSDs as **one big folder** (`/srv/storage`) that your services use. **mergerfs** handles pooling & growth; **SnapRAID** gives nightly parity + bit‑rot protection. Disks can be different sizes.
-
-> ⚠️ **Back up first** if you’re migrating existing data. SnapRAID is *cold parity* (protects against single‑disk loss when you run `sync`), not live RAID.
-
-### 1) Identify and format drives
-
-```bash
-lsblk -o NAME,SIZE,MODEL,MOUNTPOINT
-# Example: /dev/sda, /dev/sdb are your SSDs
-sudo mkfs.ext4 -L data1 /dev/sda
-sudo mkfs.ext4 -L data2 /dev/sdb
-```
-
-### 2) Create mount points & fstab entries
-
-```bash
-sudo mkdir -p /srv/d1 /srv/d2 /srv/storage
-echo 'LABEL=data1 /srv/d1 ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
-echo 'LABEL=data2 /srv/d2 ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
-sudo mount -a
-```
-
-### 3) Install and mount the mergerfs pool
-
-```bash
-sudo apt update && sudo apt install -y mergerfs
-# "most free space" placement; keep inode numbers; leave 50G headroom per disk
-echo '/srv/d* /srv/storage fuse.mergerfs defaults,allow_other,use_ino,category.create=mfs,moveonenospc=true,minfreespace=50G 0 0' | sudo tee -a /etc/fstab
-sudo mount -a
-
-# Validate
-df -h /srv/storage
-```
-
-> **Add a new SSD later?** Format+label (e.g., `data3`), create `/srv/d3`, add fstab line, `mount -a`. mergerfs automatically includes it in the pool.
-
-### 4) Install and configure SnapRAID
-
-```bash
-sudo apt install -y snapraid
-sudo mkdir -p /srv/snapraid /srv/snapraid/parity
-sudo nano /etc/snapraid.conf
-```
-
-**Minimal `/etc/snapraid.conf`** (edit to match your mounts):
-
-```
-# Where to store parity and metadata
-parity /srv/snapraid/parity/parity0
-content /srv/snapraid/snapraid.content
-
-# Data disks (read-only from SnapRAID's POV)
-data d1 /srv/d1
-data d2 /srv/d2
-# data d3 /srv/d3   # add as you grow
-
-# Ignore temp files and OS stuff
-exclude *.tmp
-exclude *.partial~
-exclude /lost+found/
-```
-
-**First sync & scrub**
-
-```bash
-# Build initial parity (can take a while)
-sudo snapraid -e fix -p 100 -o 2 sync
-# Optional integrity check (12% sample)
-sudo snapraid scrub -p 12
-```
-
-### 5) Nightly maintenance (cron)
-
-```bash
-# Run as root
-sudo crontab -e
-```
-
-Add:
-
-```
-# Nightly: scrub 12% then sync at 02:30
-30 2 * * * /usr/bin/snapraid scrub -p 12 && /usr/bin/snapraid sync
-```
-
-> **Restore from a failed disk:** replace the disk, mount it at the same path/label, then `snapraid -e fix`. See SnapRAID docs for recovery flow.
-
-### 6) Point containers at the pool
-
-Use `/srv/storage` for persistent volumes so services grow with your pool:
-
-```yaml
-# docker-compose excerpts
-services:
-  bitcoind:
-    volumes:
-      - /srv/storage/bitcoin:/home/bitcoin/.bitcoin
-  nextcloud:
-    volumes:
-      - /srv/storage/nextcloud:/var/www/html
-```
-
-> Create subfolders first: `sudo mkdir -p /srv/storage/bitcoin /srv/storage/nextcloud && sudo chown -R $USER:$USER /srv/storage/*`
 
 ---
 

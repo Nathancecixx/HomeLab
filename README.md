@@ -85,56 +85,297 @@ repo/
 
 ---
 
-## Getting Started
+# Getting Started (Pi 5)
 
-1. **Put files on the Pi** (example path):
+This section gets you from a fresh Raspberry Pi OS (64‑bit, Bookworm) to a secure, LAN/VPN‑only homelab with:
 
-   ```bash
-   cd /home/bigred/bigredpi
-   mkdir -p public && mv -f index.html style.css app.js public/
-   ```
-2. **Install system deps**:
+* **Docker + Compose**, **Node 20** for the dashboard
+* A **locked‑down UFW firewall** (LAN/VPN only for web UIs; only WireGuard is router‑exposed)
+* **Pooled USB storage** via mergerfs (grow‑as‑you‑go)
+* **Optional parity** & bit‑rot protection via SnapRAID
 
-   ```bash
-   curl -fsSL https://get.docker.com | sh
-   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-   sudo apt install -y nodejs ufw
-   sudo usermod -aG docker $USER   # re‑login after this
-   ```
-3. **Firewall (LAN/VPN‑only web UIs)**:
-
-   ```bash
-   sudo ufw default deny incoming
-   sudo ufw default allow outgoing
-   sudo ufw allow from 192.168.40.0/24 to any port 8080 proto tcp   # Dashboard
-   sudo ufw allow from 192.168.40.0/24 to any port 8081 proto tcp   # Nextcloud
-   sudo ufw allow from 192.168.40.0/24 to any port 8082 proto tcp   # Kiwix (ZIM server)
-   sudo ufw allow 51820/udp                                          # WireGuard
-   sudo ufw enable
-   sudo ufw status
-   ```
-4. **Dashboard — first run**:
-
-   ```bash
-   npm ci --omit=dev
-   PORT=8080 node server.js
-   # Visit http://<PI_LAN_IP>:8080/
-   ```
-5. **Dashboard — systemd service (optional but recommended)**
-
-   * Edit `dashboard.service` user/group/paths as needed (sample assumes `/home/bigred/bigredpi`).
-   * Install & enable:
-
-     ```bash
-     sudo cp dashboard.service /etc/systemd/system/dashboard.service
-     sudo systemctl daemon-reload
-     sudo systemctl enable --now dashboard
-     systemctl status dashboard --no-pager
-     ```
+It’s written to work “as‑is” on a Pi 5. Adjust usernames, paths, and subnets to match your network.
 
 ---
 
-## Storage Pool (mergerfs + SnapRAID) — Optional but Recommended
+## 0) Prereqs
+
+* Raspberry Pi OS (Bookworm, 64‑bit), SSH enabled
+* Static DHCP lease (example: `192.168.40.45`)
+* A user (examples below use `$USER` and `/home/$USER/bigredpi`)
+* Ability to **port‑forward UDP 51820** on your router → Pi (for WireGuard only)
+
+> **Tip:** If you’ll run SnapRAID later, plan a **dedicated parity disk** that’s **≥ your largest data disk**.
+
+---
+
+## 1) Get the files onto the Pi
+
+```bash
+# Install git
+sudo apt update
+sudo apt install git
+# Clone the repo
+git clone https://github.com/Nathancecixx/HomeLab.git
+```
+
+---
+
+## 2) Install system dependencies (Docker, Compose, Node 20, tools)
+
+```bash
+# base packages
+sudo apt update
+sudo apt install -y ca-certificates curl gnupg lsb-release ufw jq htop net-tools
+
+# Docker Engine + Compose plugin
+curl -fsSL https://get.docker.com | sh
+
+# Node.js 20 (for the dashboard)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Storage tooling (install now even if you’ll enable later)
+sudo apt install -y mergerfs snapraid
+```
+```bash
+# let your user run docker (log out/in afterward)
+sudo usermod -aG docker $USER
+```
+
+---
+
+## 3) Harden the firewall (UFW) — LAN/VPN‑only web UIs
+
+Set your subnets up front (adjust to taste):
+
+```bash
+LAN_SUBNET=192.168.40.0/24
+WG_SUBNET=10.10.250.0/24      # must match docker .env INTERNAL_SUBNET
+WG_PORT=51820
+```
+
+Baseline policy + rules:
+
+```bash
+# default policy
+sudo ufw --force reset
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+# SSH (rate‑limited)
+sudo ufw limit 22/tcp
+
+# WireGuard (public):
+sudo ufw allow ${WG_PORT}/udp
+
+# Dashboard (8080), Nextcloud (8081), Kiwix (8082) — LAN + VPN only
+sudo ufw allow from ${LAN_SUBNET} to any port 8080 proto tcp
+sudo ufw allow from ${WG_SUBNET}  to any port 8080 proto tcp
+sudo ufw allow from ${LAN_SUBNET} to any port 8081 proto tcp
+sudo ufw allow from ${WG_SUBNET}  to any port 8081 proto tcp
+sudo ufw allow from ${LAN_SUBNET} to any port 8082 proto tcp
+sudo ufw allow from ${WG_SUBNET}  to any port 8082 proto tcp
+
+# Bitcoin P2P (8333) — LAN/VPN only (do NOT forward on router unless you choose to serve)
+sudo ufw allow from ${LAN_SUBNET} to any port 8333 proto tcp
+sudo ufw allow from ${WG_SUBNET}  to any port 8333 proto tcp
+
+# Tor SOCKS (9050) — LAN/VPN only
+sudo ufw allow from ${LAN_SUBNET} to any port 9050 proto tcp
+sudo ufw allow from ${WG_SUBNET}  to any port 9050 proto tcp
+
+sudo ufw enable
+sudo ufw status numbered
+```
+
+### Make Docker respect UFW (important)
+
+Docker’s published ports bypass UFW unless you add rules to the `DOCKER-USER` chain. The following keeps **all** container ports reachable only from LAN/VPN:
+
+```bash
+sudo tee /etc/ufw/after.rules >/dev/null <<'EOF'
+# BEGIN bigredpi DOCKER-USER hardening
+*filter
+:DOCKER-USER - [0:0]
+# allow from LAN and WireGuard subnets, drop everything else trying to reach published container ports
+-A DOCKER-USER -s 192.168.40.0/24 -j RETURN
+-A DOCKER-USER -s 10.10.250.0/24  -j RETURN
+-A DOCKER-USER -j DROP
+COMMIT
+# END bigredpi DOCKER-USER hardening
+EOF
+
+sudo ufw reload
+```
+
+> If your LAN/WireGuard subnets differ, edit the two `-s` lines accordingly.
+
+---
+
+## 4) Dashboard — first run & optional service
+
+```bash
+# install node deps and run on 8080
+npm install
+npm ci --omit=dev
+```
+```bash
+PORT=8080 node server.js
+# now open http://<PI_LAN_IP>:8080/
+```
+
+Optional: run as a service so it starts on boot:
+
+```bash
+# edit the unit if your user/path differ
+sudo cp dashboard.service /etc/systemd/system/dashboard.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now dashboard
+systemctl status dashboard --no-pager
+```
+
+---
+
+## 5) **Pooled USB storage** with mergerfs (no RAID yet)
+
+> Use this when you just want **one big path** (`/srv/storage`) that grows as you plug in more USB SSDs. You can add SnapRAID later without moving data.
+
+1. **Identify & format** your data drives (example uses two 1 TB SSDs at `/dev/sda` and `/dev/sdb`):
+
+```bash
+lsblk -o NAME,SIZE,MODEL,MOUNTPOINT
+sudo mkfs.ext4 -L data1 /dev/sda
+sudo mkfs.ext4 -L data2 /dev/sdb
+```
+2. **Rename Drives**:
+
+```bash
+# Give each disk a label, increment
+sudo e2label /dev/sda data1
+sudo e2label /dev/sdb data2
+# Verify
+lsblk -f
+```
+
+3. **Create mount points, fstab, and mount**:
+
+```bash
+sudo mkdir -p /srv/d1 /srv/d2 /srv/storage
+echo 'LABEL=data1 /srv/d1 ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
+echo 'LABEL=data2 /srv/d2 ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
+sudo mount -a
+sudo systemctl daemon-reload
+```
+
+4. **Pool them at `/srv/storage`** (most‑free‑space placement; keeps inode numbers; reserves 50 GiB per disk):
+
+```bash
+echo '/srv/d* /srv/storage fuse.mergerfs defaults,allow_other,use_ino,category.create=mfs,moveonenospc=true,minfreespace=50G 0 0' | sudo tee -a /etc/fstab
+sudo mount -a
+
+df -h /srv/storage
+```
+
+> **Add a new SSD later:** format & label it (e.g., `data3`), `mkdir /srv/d3`, append an fstab line for it, `sudo mount -a`. mergerfs auto‑includes any `/srv/d*` mounts.
+
+> **Recommended layout:** keep your **OS** on its own disk (e.g., a 500 GB SSD) and only pool **data** disks.
+
+---
+
+## 6) (Optional) Add **SnapRAID parity** & integrity scrubs later
+
+> SnapRAID is **cold parity**: it protects against *disk loss* and *bit‑rot* between `sync` runs. It’s not live RAID and it’s not a backup.
+
+1. **Prepare a dedicated parity disk** (size **≥ largest data disk**, e.g., a 2 TB SSD):
+
+```bash
+sudo mkfs.ext4 -L parity1 /dev/sdc
+sudo mkdir -p /srv/snapraid/parity
+echo 'LABEL=parity1 /srv/snapraid/parity ext4 defaults,noatime 0 2' | sudo tee -a /etc/fstab
+sudo mount -a
+```
+
+2. **Create `/etc/snapraid.conf`** (safer defaults with **multiple content files** and excludes for reproducible data):
+
+```conf
+# Parity lives on its own disk/partition
+autoselect yes
+parity /srv/snapraid/parity/parity0
+
+# Keep a content file on each disk + parity for robust recovery
+content /srv/d1/snapraid.content
+content /srv/d2/snapraid.content
+content /srv/snapraid/parity/snapraid.content
+
+# Data disks (read‑only from SnapRAID’s POV)
+data d1 /srv/d1
+data d2 /srv/d2
+# data d3 /srv/d3   # add as you grow
+
+# Exclude reproducible datasets and junk (saves parity/scrub time)
+exclude /srv/d*/bitcoin/**
+exclude /srv/d*/zim/**
+exclude *.tmp
+exclude *.partial~
+exclude /lost+found/
+```
+
+3. **Initial sync & a light scrub** (pause heavy writes while the first sync runs):
+
+```bash
+sudo snapraid -e fix -p 100 -o 2 sync
+sudo snapraid scrub -p 12
+```
+
+4. **Nightly maintenance (as root)**:
+
+```bash
+sudo crontab -e
+# add one line:
+30 2 * * * /usr/bin/snapraid scrub -p 12 && /usr/bin/snapraid sync
+```
+
+> **Parity math:** usable capacity = sum of **data** disks only. Parity disk doesn’t contribute capacity. If you later add larger data disks, first upgrade parity so it’s ≥ the largest data disk.
+
+---
+
+## 7) Spin up services (pick what you need)
+
+Environment examples live in the README; typical starts:
+
+```bash
+# WireGuard (VPN) — exposes only UDP 51820 (router port‑forward required)
+docker compose up -d wireguard
+
+# Bitcoin Core (+ optional Tor sidecar)
+docker compose up -d tor bitcoind
+
+# Nextcloud (LAN/VPN‑only web UI on 8081)
+docker compose up -d nextcloud-db nextcloud-redis nextcloud
+
+# Kiwix (LAN/VPN‑only web UI on 8082)
+docker compose up -d kiwix
+```
+
+> All persistent data lives under `/srv/storage/...` (and `/srv/offline/zim` for Kiwix). Create those folders first and `chown` them to your user if needed.
+
+```bash
+sudo mkdir -p /srv/storage/bitcoin /srv/storage/nextcloud /srv/offline/zim
+sudo chown -R $USER:$USER /srv/storage/* /srv/offline/zim
+```
+
+---
+
+## 8) Quick health checklist
+
+* `ufw status` shows only **UDP 51820** open to the world; all other ports limited to **LAN/VPN**
+* `docker compose ps` shows only the modules you chose are running
+* `df -h /srv/storage` reflects the sum of pooled disks
+* If SnapRAID is enabled, `sudo snapraid status` shows **synced** and scrubs completing periodically
+
+> **Backups still matter.** Keep a copy of irreplaceable data (photos/docs) off‑box (another disk or cloud). RAID ≠ backup.
+
 
 **Goal:** Treat multiple USB SSDs as **one big folder** (`/srv/storage`) that your services use. **mergerfs** handles pooling & growth; **SnapRAID** gives nightly parity + bit‑rot protection. Disks can be different sizes.
 

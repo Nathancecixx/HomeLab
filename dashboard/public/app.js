@@ -58,6 +58,9 @@ const SERVICES = [
 
   { id: "btcexplorer", label: "Bitcoin Explorer", emoji: "🧭", preferPort: 3002,
     match: (c) => /btc-?rpc-?explorer/i.test(c.name||"") || /btc-?rpc-?explorer/i.test(c.image||"") },
+
+  { id: "n8n", label: "Automation (n8n)", emoji: "⚙️", preferPort: 8087,
+    match: (c) => /(^|\b)n8n($|\b)/i.test(c.name||"") || /(^|\b)n8n($|\b)/i.test(c.image||"") },
 ];
 
 /* ---------- Docker ports parsing helpers ---------- */

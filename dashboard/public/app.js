@@ -3,6 +3,15 @@
 /* ---------- tiny DOM helpers & formatters ---------- */
 const $ = (id) => document.getElementById(id);
 
+function applyTableLabels(row, labels){
+  if (!row || !labels) return;
+  Array.from(row.children || []).forEach((cell, idx) => {
+    if (cell && labels[idx]){
+      cell.setAttribute('data-label', labels[idx]);
+    }
+  });
+}
+
 function fmtPct(n){
   const x = Number(n);
   return Number.isFinite(x) ? `${x.toFixed(0)}%` : "—";
@@ -302,6 +311,7 @@ function updateDisks(disks){
         <div class="bar"><span style="width:${d.usage}%;"></span></div>
         ${d.usage}%
       </td>`;
+    applyTableLabels(tr, ["Mount", "Size", "Used", "Usage"]);
     tbody.appendChild(tr);
   });
 }
@@ -320,6 +330,7 @@ function updateContainers(docker){
       <td>${c.image || "—"}</td>
       <td><span class="chip ${chipClass}">${chipText}</span> <span class="muted">${c.status || ""}</span></td>
       <td>${c.ports || ""}</td>`;
+    applyTableLabels(tr, ["Name", "Image", "Status", "Ports"]);
     tbody.appendChild(tr);
   });
 }

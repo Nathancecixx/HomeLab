@@ -88,7 +88,7 @@ function renderProtectedShell() {
 
       services.forEach(s => {
         const status = s.running === true ? ["ok", "Running"]
-                    : s.running === false ? ["bad", "Stopped"]
+                    : s.running === false ? ["neutral", "Stopped"]
                     : ["neutral", "Unknown"];
         const tr = document.createElement("tr");
         tr.innerHTML = `

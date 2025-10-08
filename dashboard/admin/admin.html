@@ -22,29 +22,18 @@
         <div class="brand-mark" aria-hidden="true">⚙️</div>
         <div class="brand-copy">
           <h1>Admin Panel</h1>
-          <p class="muted">Control services, manage environments, stay in sync.</p>
+          <p class="muted">Manage services and environment files on BigRedPi.</p>
         </div>
-      </div>
-
-      <div class="header-meta">
-        <div class="meta-stack">
-          <span class="meta-label">Status</span>
-          <span class="meta-value">Secure</span>
-        </div>
-        <span class="pill pill-protected">Protected</span>
       </div>
 
       <div class="header-actions">
-        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light theme">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
           <span class="theme-icon" aria-hidden="true"></span>
           <span class="theme-label">Theme</span>
         </button>
         <a class="admin-btn" href="/" aria-label="Return to dashboard">
           <span class="admin-icon">🏠</span>
-          <span class="admin-text">
-            <strong>Dashboard</strong>
-            <small>/</small>
-          </span>
+          <span class="admin-text"><strong>Dashboard</strong></span>
         </a>
       </div>
     </header>
@@ -52,13 +41,13 @@
     <main class="page-content admin-page-content">
       <section class="card admin-intro">
         <div class="admin-intro-copy">
-          <h2>Administrator Toolkit</h2>
-          <p class="muted">Authenticate to orchestrate services, trigger restarts, and edit runtime configuration without leaving the dashboard aesthetic.</p>
+          <h2>Tools</h2>
+          <p class="muted">Start/stop/restart services and edit their <code>.env</code> files in one place.</p>
         </div>
         <ul class="admin-intro-list">
-          <li><span>One-click start, stop, and restart controls</span></li>
-          <li><span>Direct .env editing with instant saves</span></li>
-          <li><span>Session-aware security with modal login</span></li>
+          <li><span>Service controls</span></li>
+          <li><span>Inline <code>.env</code> editor</span></li>
+          <li><span>Password-gated access</span></li>
         </ul>
       </section>
 
@@ -66,26 +55,25 @@
         <section class="card admin-placeholder" aria-live="polite">
           <div class="placeholder-head">
             <div>
-              <h2>Authentication Required</h2>
-              <p class="muted">Use the administrator password to unlock service controls.</p>
+              <h2>Authentication required</h2>
+              <p class="muted">Enter the admin password to view and manage services.</p>
             </div>
-            <span class="pill pill-locked">Locked</span>
           </div>
         </section>
       </div>
     </main>
 
     <footer class="page-footer glass-panel">
-      <small>Admin actions are logged locally</small>
-      <small>Session <span class="pill pill-protected">Protected</span></small>
+      <small>Admin actions are logged locally on Pi.</small>
     </footer>
   </div>
 
+  <!-- Login Modal -->
   <div class="modal" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title" aria-describedby="login-description" style="display:none">
     <div class="panel">
       <header class="panel-header">
-        <h3 id="login-title">Administrator Login</h3>
-        <p id="login-description" class="muted">Enter the admin password to continue.</p>
+        <h3 id="login-title">Admin login</h3>
+        <p id="login-description" class="muted">Enter the password to continue.</p>
       </header>
       <div class="field">
         <label for="pw">Password</label>
@@ -117,7 +105,6 @@
     }
 
     apply(initial);
-
     toggle.addEventListener('click', () => {
       const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       apply(next);

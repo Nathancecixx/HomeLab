@@ -55,17 +55,17 @@ function renderProtectedShell() {
   const header = el("div", { class: "row" }, [
     el("h2", { text: "Services" }),
     el("div", { class: "row gap" }, [
-      el("button", { class: "btn", id: "btn-refresh", text: "Refresh" }),
-      el("button", { class: "btn", id: "btn-logout", text: "Logout" }),
+      el("button", { class: "btn", id: "btn-refresh", text: "Refresh", type: "button" }),
+      el("button", { class: "btn ghost", id: "btn-logout", text: "Logout", type: "button" }),
     ]),
   ]);
-  const table = el("table", { id: "svc-table", style: "width:100%;border-collapse:separate;border-spacing:0 6px" });
+  const table = el("table", { id: "svc-table" });
   table.innerHTML = `
     <thead><tr>
-      <th style="text-align:left;padding:6px 8px">Service</th>
-      <th style="text-align:left;padding:6px 8px">Status</th>
-      <th style="text-align:left;padding:6px 8px">Actions</th>
-      <th style="text-align:left;padding:6px 8px">.env</th>
+      <th scope="col">Service</th>
+      <th scope="col">Status</th>
+      <th scope="col">Actions</th>
+      <th scope="col">.env</th>
     </tr></thead>
     <tbody></tbody>
   `;
@@ -76,33 +76,39 @@ function renderProtectedShell() {
 
   async function load() {
     const tbody = table.querySelector("tbody");
-    tbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:8px">Loading…</td></tr>`;
+    tbody.innerHTML = `<tr class="table-message"><td colspan="4"><span class="table-state muted">Loading…</span></td></tr>`;
     try {
       const data = await api("/api/admin/services");
+      const services = data.services || [];
       tbody.innerHTML = "";
-      (data.services || []).forEach(s => {
+      if (!services.length) {
+        tbody.innerHTML = `<tr class="table-message"><td colspan="4"><span class="table-state muted">No services reported yet.</span></td></tr>`;
+        return;
+      }
+
+      services.forEach(s => {
         const status = s.running === true ? ["ok", "Running"]
                     : s.running === false ? ["bad", "Stopped"]
-                    : ["", "Unknown"];
+                    : ["neutral", "Unknown"];
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td style="padding:6px 8px">${s.label}</td>
-          <td style="padding:6px 8px"><span class="chip ${status[0]}">${status[1]}</span></td>
-          <td style="padding:6px 8px">
+          <td>${s.label}</td>
+          <td><span class="chip ${status[0]}">${status[1]}</span></td>
+          <td>
             <div class="row gap">
-              <button class="btn" data-act="start"   data-id="${s.id}">Start</button>
-              <button class="btn" data-act="stop"    data-id="${s.id}">Stop</button>
-              <button class="btn" data-act="restart" data-id="${s.id}">Restart</button>
+              <button class="btn" type="button" data-act="start"   data-id="${s.id}">Start</button>
+              <button class="btn" type="button" data-act="stop"    data-id="${s.id}">Stop</button>
+              <button class="btn" type="button" data-act="restart" data-id="${s.id}">Restart</button>
             </div>
           </td>
-          <td style="padding:6px 8px">
-            <button class="btn" data-edit="${s.id}">${s.hasEnv ? "Edit Env" : "Create Env"}</button>
+          <td>
+            <button class="btn" type="button" data-edit="${s.id}">${s.hasEnv ? "Edit Env" : "Create Env"}</button>
           </td>
         `;
         tbody.appendChild(tr);
       });
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="4" class="muted" style="padding:8px">Failed: ${e?.data?.error || e.message}</td></tr>`;
+      tbody.innerHTML = `<tr class="table-message"><td colspan="4"><span class="table-state muted">Failed: ${e?.data?.error || e.message}</span></td></tr>`;
     }
   }
 
@@ -201,13 +207,13 @@ async function openEnvEditor(id) {
   const modal = el("div", { class: "modal" });
   const panel = el("div", { class: "panel" });
   const title = el("h3", { text: `Edit .env (${id})` });
-  const ta = el("textarea", { style: "width:100%;height:40vh" });
+  const ta = el("textarea");
   ta.value = meta.text || "";
   const info = el("div", { class: "muted", text: meta.exists ? meta.path : "(file will be created on save)" });
 
   const row = el("div", { class: "row gap", style: "margin-top:12px" }, [
-    el("button", { class: "btn", id: "env-cancel", text: "Cancel" }),
-    el("button", { class: "btn ok", id: "env-save", text: "Save" }),
+    el("button", { class: "btn ghost", id: "env-cancel", text: "Cancel", type: "button" }),
+    el("button", { class: "btn ok", id: "env-save", text: "Save", type: "button" }),
   ]);
   panel.appendChild(title); panel.appendChild(info); panel.appendChild(ta); panel.appendChild(row);
   modal.appendChild(panel); document.body.appendChild(modal);

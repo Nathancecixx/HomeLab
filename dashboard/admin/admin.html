@@ -4,38 +4,113 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>BigRedPi · Admin</title>
+  <link rel="icon" href="/favicon.ico" />
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/admin/assets/admin.css" />
 </head>
-<body>
-  <header>
-    <h1>Admin</h1>
-    <div class="meta"><span class="pill">Protected</span></div>
-  </header>
+<body data-theme="dark">
+  <div class="bg-canvas" aria-hidden="true">
+    <span class="glow glow-1"></span>
+    <span class="glow glow-2"></span>
+    <span class="glow glow-3"></span>
+    <span class="grid-overlay"></span>
+  </div>
 
-  <main id="admin-root" style="min-height:40vh">
-    <!-- JS will either show login modal or render the protected shell -->
-  </main>
-
-  <!-- Login Modal (hidden until needed) -->
-  <div class="modal" id="login-modal" style="display:none">
-    <div class="panel">
-      <h3>Administrator Login</h3>
-      <p class="muted">Enter the admin password to continue.</p>
-      <div class="kv-grid">
-        <div class="group" style="grid-column:1/-1">
-          <label for="pw">Password</label>
-          <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" />
+  <div class="page-shell">
+    <header class="page-header glass-panel admin-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">⚙️</div>
+        <div class="brand-copy">
+          <h1>Admin Panel</h1>
+          <p class="muted">Manage services and environment files on BigRedPi.</p>
         </div>
       </div>
-      <div class="row gap" style="margin-top:12px">
-        <button class="btn" id="btn-cancel">Cancel</button>
-        <button class="btn ok" id="btn-login">Login</button>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch theme">
+          <span class="theme-icon" aria-hidden="true"></span>
+          <span class="theme-label">Theme</span>
+        </button>
+        <a class="admin-btn" href="/" aria-label="Return to dashboard">
+          <span class="admin-icon">🏠</span>
+          <span class="admin-text"><strong>Dashboard</strong></span>
+        </a>
       </div>
-      <div class="muted" id="login-err" style="margin-top:8px"></div>
+    </header>
+
+    <main class="page-content admin-page-content">
+      <section class="card admin-intro">
+        <div class="admin-intro-copy">
+          <h2>Tools</h2>
+          <p class="muted">Start/stop/restart services and edit their <code>.env</code> files in one place.</p>
+        </div>
+        <ul class="admin-intro-list">
+          <li><span>Service controls</span></li>
+          <li><span>Inline <code>.env</code> editor</span></li>
+          <li><span>Password-gated access</span></li>
+        </ul>
+      </section>
+
+      <div id="admin-root" class="admin-root">
+        <section class="card admin-placeholder" aria-live="polite">
+          <div class="placeholder-head">
+            <div>
+              <h2>Authentication required</h2>
+              <p class="muted">Enter the admin password to view and manage services.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="page-footer glass-panel">
+      <small>Admin actions are logged locally on Pi.</small>
+    </footer>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal" id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title" aria-describedby="login-description" style="display:none">
+    <div class="panel">
+      <header class="panel-header">
+        <h3 id="login-title">Admin login</h3>
+        <p id="login-description" class="muted">Enter the password to continue.</p>
+      </header>
+      <div class="field">
+        <label for="pw">Password</label>
+        <input id="pw" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <div class="row gap panel-actions">
+        <button class="btn ghost" id="btn-cancel" type="button">Cancel</button>
+        <button class="btn ok" id="btn-login" type="button">Login</button>
+      </div>
+      <div class="feedback" id="login-err" role="alert"></div>
     </div>
   </div>
 
+  <script>
+  (function(){
+    const root = document.body;
+    const toggle = document.getElementById('theme-toggle');
+    if(!toggle) return;
+
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const saved = localStorage.getItem('dashboard-theme');
+    const initial = saved || (prefersDark ? 'dark' : 'light');
+
+    function apply(theme){
+      root.setAttribute('data-theme', theme);
+      toggle.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`);
+      toggle.dataset.mode = theme;
+      localStorage.setItem('dashboard-theme', theme);
+    }
+
+    apply(initial);
+    toggle.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      apply(next);
+    });
+  })();
+  </script>
   <script src="/admin/assets/admin.js"></script>
 </body>
 </html>

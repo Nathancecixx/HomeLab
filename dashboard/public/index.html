@@ -7,23 +7,48 @@
   <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="/style.css">
 </head>
-<body>
-<header>
-  <h1>BigRedPi Dashboard</h1>
-  <div class="meta">
-    <span id="host"></span>
-    <span class="pill">Live</span>
+<body data-theme="dark">
+<div class="bg-canvas" aria-hidden="true">
+  <span class="glow glow-1"></span>
+  <span class="glow glow-2"></span>
+  <span class="glow glow-3"></span>
+  <span class="grid-overlay"></span>
+</div>
+
+<div class="page-shell">
+<header class="page-header glass-panel">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">⧉</div>
+    <div class="brand-copy">
+      <h1>BigRedPi Dashboard</h1>
+      <p class="muted">Realtime visibility for your homelab</p>
+    </div>
   </div>
-  <a class="admin-btn" href="/admin" target="_blank" rel="noopener noreferrer" aria-label="Open Admin Panel">
-    <span class="admin-icon">⚙️</span>
-    <span class="admin-text">
-      <strong>Admin</strong>
-      <small>/admin</small>
-    </span>
-  </a>
+
+  <div class="header-meta">
+    <div class="meta-stack">
+      <span class="meta-label">Host</span>
+      <span id="host" class="meta-value">—</span>
+    </div>
+    <span class="pill live-pill">Live</span>
+  </div>
+
+  <div class="header-actions">
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light theme">
+      <span class="theme-icon" aria-hidden="true"></span>
+      <span class="theme-label">Theme</span>
+    </button>
+    <a class="admin-btn" href="/admin" target="_blank" rel="noopener noreferrer" aria-label="Open Admin Panel">
+      <span class="admin-icon">⚙️</span>
+      <span class="admin-text">
+        <strong>Admin</strong>
+        <small>/admin</small>
+      </span>
+    </a>
+  </div>
 </header>
 
-<main>
+<main class="page-content">
   <section class="cards">
     <div class="card">
       <h2>CPU</h2>
@@ -116,10 +141,37 @@
   </section>
 </main>
 
-<footer>
-  <small>LAN/VPN only · <span id="last-updated">—</span></small>
+<footer class="page-footer glass-panel">
+  <small>LAN/VPN only</small>
+  <small>Last updated <span id="last-updated">—</span></small>
 </footer>
+</div>
 
+<script>
+(function(){
+  const root = document.body;
+  const toggle = document.getElementById('theme-toggle');
+  if(!toggle) return;
+
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const saved = localStorage.getItem('dashboard-theme');
+  const initial = saved || (prefersDark ? 'dark' : 'light');
+
+  function apply(theme){
+    root.setAttribute('data-theme', theme);
+    toggle.setAttribute('aria-label', `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`);
+    toggle.dataset.mode = theme;
+    localStorage.setItem('dashboard-theme', theme);
+  }
+
+  apply(initial);
+
+  toggle.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    apply(next);
+  });
+})();
+</script>
 <script src="/app.js"></script>
 </body>
 </html>

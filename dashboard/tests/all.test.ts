@@ -1,0 +1,9 @@
+import "./auth.test.ts";
+import "./config.test.ts";
+import "./docker.test.ts";
+import "./env.test.ts";
+import "./runtime-status.test.ts";
+import "./services.test.ts";
+import "./telemetry.test.ts";
+import "./view-model.test.ts";
+import "./wol.test.ts";

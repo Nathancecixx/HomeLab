@@ -61,18 +61,17 @@
 
 ```
 repo/
-├─ package.json              # name: bigredpi-dashboard; start -> node server.js
-├─ server.js                 # Express server (serves ./public + SSE /api/stream)
-├─ index.html  style.css  app.js  # UI (should live under ./public/)
-├─ dashboard.service         # systemd unit (edit user/paths)
-├─ docker-compose.yml        # Compose for all modules (pick the services you want)
-├─ Dockerfile  torrc  start-tor.sh  # Tor sidecar for Bitcoin Core onion P2P
-├─ .env                      # Per-module env snippets (examples below)
-├─ Makefile                  # Optional convenience targets
+├─ dashboard/
+│  ├─ app/                   # Next.js app router pages + API routes
+│  ├─ components/            # Shared dashboard/admin UI
+│  ├─ lib/                   # Telemetry, auth, service registry, docker control
+│  ├─ docker-compose.yml     # Preferred dashboard deployment
+│  ├─ Dockerfile             # Standalone production image
+│  ├─ dashboard.service      # Optional non-container fallback
+│  └─ README.md
+├─ nextcloud/  vpn-wireguard/  node-bitcoin/  zim-server/
 └─ docs/screenshot-dashboard.png
 ```
-
-> **Important:** `server.js` serves **`./public`** — create that folder and move `index.html`, `style.css`, and `app.js` into it.
 
 ---
 
@@ -216,24 +215,31 @@ sudo ufw reload
 ## 4) Dashboard — first run & optional service
 
 ```bash
-# install node deps and run on 8080
-npm install
-npm ci --omit=dev
-```
-```bash
-PORT=8080 node server.js
+# inside the dashboard module
+cd dashboard
+cp .env.example .env
+
+# build and run the containerized dashboard
+docker compose up -d --build
+
 # now open http://<PI_LAN_IP>:8080/
 ```
 
-Optional: run as a service so it starts on boot:
+Optional: run the built standalone app as a systemd service instead:
 
 ```bash
-# edit the unit if your user/path differ
+# inside dashboard/
+npm ci
+npm run build
+
+# edit the unit if your user/path differ, then install it
 sudo cp dashboard.service /etc/systemd/system/dashboard.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now dashboard
 systemctl status dashboard --no-pager
 ```
+
+See `dashboard/README.md` for the updated dashboard-specific workflow and env details.
 
 ---
 

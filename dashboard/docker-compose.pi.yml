@@ -1,0 +1,29 @@
+services:
+  dashboard:
+    container_name: dashboard
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    pid: host
+    uts: host
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      HTTP_PORT: ${HTTP_PORT:-8080}
+      PORT: ${HTTP_PORT:-8080}
+      HOSTNAME: 0.0.0.0
+      HOMELAB_ROOT: /homelab
+      HOST_FS_ROOT: /hostfs
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ..:/homelab
+      - /:/hostfs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:${HTTP_PORT:-8080}/api/health > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s

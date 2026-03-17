@@ -8,8 +8,14 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/home/bigred/bigredpi/dashboard
 Environment=NODE_ENV=production
+Environment=HTTP_PORT=8080
+Environment=PORT=8080
+Environment=HOSTNAME=0.0.0.0
+Environment=HOMELAB_ROOT=/home/bigred/bigredpi
+Environment=HOST_FS_ROOT=/
+Environment=COOKIE_SECURE=false
 EnvironmentFile=/home/bigred/bigredpi/dashboard/.env
-ExecStart=/usr/bin/node server.js
+ExecStart=/usr/bin/node .next/standalone/server.js
 
 Restart=on-failure
 RestartSec=3
@@ -23,7 +29,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=no
 ProtectSystem=full
-ReadWritePaths=/home/bigred/bigredpi/dashboard
+ReadWritePaths=/home/bigred/bigredpi /var/run/docker.sock
 
 
 [Install]

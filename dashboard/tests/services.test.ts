@@ -12,17 +12,18 @@ describe("service registry", () => {
 
   it("derives app links from registry metadata instead of docker port scraping", () => {
     const nextcloud = getServiceById("nextcloud");
-    const zim = getServiceById("zim");
+    const fitnesspal = getServiceById("fitnesspal");
 
     assert.notEqual(nextcloud, null);
+    assert.notEqual(fitnesspal, null);
     assert.deepEqual(resolveServiceApp(nextcloud!, "HTTP_PORT=9090\n"), {
       label: "Open Nextcloud",
       port: 9090,
       protocol: "http",
     });
-    assert.deepEqual(resolveServiceApp(zim!, ""), {
-      label: "Open Library",
-      port: 8082,
+    assert.deepEqual(resolveServiceApp(fitnesspal!, ""), {
+      label: "Open App",
+      port: 8080,
       protocol: "http",
     });
   });

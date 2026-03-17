@@ -46,7 +46,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     id: "fitnesspal",
     label: "Fitness Pal",
     description: "Personalized AI training coach",
-    directoryName: "../FitnessPal",
+    directoryName: "../external/FitnessPal",
     envFileName: ".env",
     composeProject: "fitnesspal",
     actions: ["start", "stop", "restart"],

@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 
-import { getServicePaths, resolveServiceApp } from "@/lib/services";
+import { getServicePaths, resolveServiceApp, resolveServiceDevice } from "@/lib/services";
 import type {
   AdminAction,
   AdminActionResult,
@@ -149,6 +149,7 @@ export async function inspectService(service: ServiceRegistryEntry, envText: str
       id: service.id,
       label: service.label,
       description: service.description,
+      device: resolveServiceDevice(service),
       modulePath: null,
       envPath: null,
       composeProject: service.composeProject,
@@ -177,6 +178,7 @@ export async function inspectService(service: ServiceRegistryEntry, envText: str
     id: service.id,
     label: service.label,
     description: service.description,
+    device: resolveServiceDevice(service),
     modulePath,
     envPath,
     composeProject: service.composeProject,
@@ -207,6 +209,7 @@ export async function inspectHttpService(service: ServiceRegistryEntry): Promise
       id: service.id,
       label: service.label,
       description: service.description,
+      device: resolveServiceDevice(service),
       modulePath: null,
       envPath: null,
       composeProject: service.composeProject,
@@ -237,6 +240,7 @@ export async function inspectHttpService(service: ServiceRegistryEntry): Promise
       id: service.id,
       label: service.label,
       description: service.description,
+      device: resolveServiceDevice(service),
       modulePath: null,
       envPath: null,
       composeProject: service.composeProject,
@@ -262,6 +266,7 @@ export async function inspectHttpService(service: ServiceRegistryEntry): Promise
       id: service.id,
       label: service.label,
       description: service.description,
+      device: resolveServiceDevice(service),
       modulePath: null,
       envPath: null,
       composeProject: service.composeProject,

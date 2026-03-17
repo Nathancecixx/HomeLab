@@ -10,6 +10,10 @@ function createService(overrides?: Partial<ServiceSnapshot>): ServiceSnapshot {
     id: "nextcloud",
     label: "Nextcloud",
     description: "Files",
+    device: {
+      id: "bigredpi",
+      label: "BigRedPi",
+    },
     modulePath: "/homelab/nextcloud",
     envPath: "/homelab/nextcloud/.env",
     composeProject: "nextcloud",

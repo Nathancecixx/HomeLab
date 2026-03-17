@@ -1,15 +1,29 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getServiceById, resolveServiceApp } from "@/lib/services";
+import { getServiceById, getServiceDeviceById, resolveServiceApp } from "@/lib/services";
 
 describe("service registry", () => {
   it("exposes the configured service list", () => {
     assert.equal(getServiceById("nextcloud")?.label, "Nextcloud");
+    assert.equal(getServiceById("nextcloud")?.deviceId, "bigredpi");
     assert.equal(getServiceById("openwebui")?.label, "Open WebUI");
+    assert.equal(getServiceById("openwebui")?.deviceId, "workstation");
     assert.equal(getServiceById("ollama")?.label, "Ollama");
     assert.equal(getServiceById("btc-explorer"), null);
     assert.equal(getServiceById("n8n"), null);
+  });
+
+  it("resolves service devices from the shared device registry", () => {
+    assert.deepEqual(getServiceDeviceById("bigredpi"), {
+      id: "bigredpi",
+      label: "BigRedPi",
+    });
+    assert.deepEqual(getServiceDeviceById("workstation"), {
+      id: "workstation",
+      label: "Workstation",
+      host: "192.168.40.94",
+    });
   });
 
   it("derives app links from registry metadata instead of docker port scraping", () => {

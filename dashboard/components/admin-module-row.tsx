@@ -40,6 +40,7 @@ export function AdminModuleRow({
           <span className="signal" data-tone={tone}>
             {serviceStatusText(service)}
           </span>
+          <span className="mini-note">{service.device.label}</span>
           {service.kind === "http" ? (
             <>
               <span className="mini-note">HTTP ping</span>

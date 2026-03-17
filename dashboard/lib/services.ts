@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { appConfig } from "@/lib/config";
 import { parseEnvText } from "@/lib/env";
-import type { ServiceRegistryEntry } from "@/lib/types";
+import type { ServiceDeviceEntry, ServiceRegistryEntry } from "@/lib/types";
 
 function withDefaultPort(value: string | undefined, fallback: number) {
   const parsed = Number(value);
@@ -20,12 +20,25 @@ function appLinkFromUrl(urlValue: string, label: string) {
   } as const;
 }
 
+export const serviceDeviceRegistry: ServiceDeviceEntry[] = [
+  {
+    id: "bigredpi",
+    label: "BigRedPi",
+  },
+  {
+    id: "workstation",
+    label: "Workstation",
+    host: "192.168.40.94",
+  },
+];
+
 export const serviceRegistry: ServiceRegistryEntry[] = [
   {
     id: "wireguard",
     label: "WireGuard VPN",
     description: "Encrypted remote access into the LAN.",
     kind: "compose",
+    deviceId: "bigredpi",
     directoryName: "vpn-wireguard",
     envFileName: ".env",
     composeProject: "vpn-wireguard",
@@ -36,6 +49,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     label: "Nextcloud",
     description: "Personal cloud storage and sync surface.",
     kind: "compose",
+    deviceId: "bigredpi",
     directoryName: "nextcloud",
     envFileName: ".env",
     composeProject: "nextcloud",
@@ -51,6 +65,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     label: "Bitcoin Node",
     description: "Core blockchain node with private RPC exposure.",
     kind: "compose",
+    deviceId: "bigredpi",
     directoryName: "node-bitcoin",
     envFileName: ".env",
     composeProject: "node-bitcoin",
@@ -61,6 +76,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     label: "Fitness Pal",
     description: "Personalized AI training coach.",
     kind: "compose",
+    deviceId: "bigredpi",
     directoryName: "../external/FitnessPal",
     envFileName: ".env",
     composeProject: "fitnesspal",
@@ -76,6 +92,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     label: "Open WebUI",
     description: "Remote chat surface on the workstation.",
     kind: "http",
+    deviceId: "workstation",
     composeProject: "open-webui",
     actions: [],
     monitorUrl: "http://192.168.40.94:3000/",
@@ -86,6 +103,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     label: "Ollama",
     description: "Remote model runtime served from the workstation.",
     kind: "http",
+    deviceId: "workstation",
     composeProject: "ollama",
     actions: [],
     monitorUrl: "http://192.168.40.94:11434/",
@@ -94,6 +112,17 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
 
 export function getServiceById(id: string) {
   return serviceRegistry.find((service) => service.id === id) ?? null;
+}
+
+export function getServiceDeviceById(id: string) {
+  return serviceDeviceRegistry.find((device) => device.id === id) ?? null;
+}
+
+export function resolveServiceDevice(service: Pick<ServiceRegistryEntry, "deviceId">): ServiceDeviceEntry {
+  return getServiceDeviceById(service.deviceId) ?? {
+    id: service.deviceId,
+    label: service.deviceId,
+  };
 }
 
 export function getServicePaths(service: ServiceRegistryEntry) {

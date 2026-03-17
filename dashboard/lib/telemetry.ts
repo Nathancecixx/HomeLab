@@ -8,7 +8,7 @@ import { appConfig } from "@/lib/config";
 import { inspectHttpService, inspectService, listDockerContainers } from "@/lib/docker";
 import { readHostIdentity, readHostPrimaryInterface, readHostStorage, readHostUptimeSeconds } from "@/lib/host";
 import { buildRuntimeStatus } from "@/lib/runtime-status";
-import { getServicePaths, resolveServiceApp, serviceRegistry } from "@/lib/services";
+import { getServicePaths, resolveServiceApp, resolveServiceDevice, serviceRegistry } from "@/lib/services";
 import type {
   DashboardSnapshot,
   HealthLevel,
@@ -479,6 +479,7 @@ class TelemetryManager {
               id: service.id,
               label: service.label,
               description: service.description,
+              device: resolveServiceDevice(service),
               modulePath: null,
               envPath: null,
               composeProject: service.composeProject,
@@ -507,6 +508,7 @@ class TelemetryManager {
               id: service.id,
               label: service.label,
               description: service.description,
+              device: resolveServiceDevice(service),
               modulePath,
               envPath,
               composeProject: service.composeProject,

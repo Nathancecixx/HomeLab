@@ -13,11 +13,18 @@ export interface ServiceAppLink {
   path?: string;
 }
 
+export interface ServiceDeviceEntry {
+  id: string;
+  label: string;
+  host?: string;
+}
+
 export interface ServiceRegistryEntry {
   kind?: ServiceKind;
   id: string;
   label: string;
   description: string;
+  deviceId: string;
   directoryName?: string;
   envFileName?: string;
   composeProject: string;
@@ -31,6 +38,7 @@ export interface ServiceSnapshot {
   id: string;
   label: string;
   description: string;
+  device: ServiceDeviceEntry;
   modulePath: string | null;
   envPath: string | null;
   composeProject: string;

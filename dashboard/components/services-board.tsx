@@ -64,6 +64,10 @@ export function ServicesBoard({ services, hostname }: ServicesBoardProps) {
                       <span>Target</span>
                       <strong className="mono">{target}</strong>
                     </div>
+                    <div className="detail-pair">
+                      <span>Machine</span>
+                      <strong>{service.device.label}</strong>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -81,6 +85,10 @@ export function ServicesBoard({ services, hostname }: ServicesBoardProps) {
                     <div className="detail-pair">
                       <span>Project</span>
                       <strong className="mono">{service.composeProject}</strong>
+                    </div>
+                    <div className="detail-pair">
+                      <span>Machine</span>
+                      <strong>{service.device.label}</strong>
                     </div>
                   </>
                 )}

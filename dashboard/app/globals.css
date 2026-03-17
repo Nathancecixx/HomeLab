@@ -657,6 +657,7 @@ button {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.02);
+  scrollbar-width: thin;
 }
 
 .data-table {
@@ -938,12 +939,15 @@ html[data-theme="light"] .editor-toolbar {
 
 @media (max-width: 980px) {
   .command-cluster,
-  .ops-grid,
   .metric-tile__details,
   .detail-grid,
   .editor-meta,
   .service-tile__stats,
   .runtime-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-grid {
     grid-template-columns: 1fr;
   }
 
@@ -958,23 +962,220 @@ html[data-theme="light"] .editor-toolbar {
 
 @media (max-width: 760px) {
   .page {
-    width: min(100% - 16px, 1480px);
-    padding-top: 12px;
-    padding-bottom: 20px;
+    width: min(100% - 12px, 1480px);
+    padding-top: 10px;
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
   }
 
   .command-bar {
     position: static;
-    padding: 16px;
+    gap: var(--space-4);
+    padding: 14px;
   }
 
-  .kpi-strip {
+  .command-bar__brand {
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .command-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    font-size: 1rem;
+  }
+
+  .command-title-row h1 {
+    font-size: 1.32rem;
+  }
+
+  .command-cluster {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .command-stat {
+    padding: 10px 12px;
+  }
+
+  .command-stat strong {
+    font-size: 0.92rem;
+  }
+
+  .command-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .command-actions > * {
+    width: 100%;
   }
 
   .section-block,
   .auth-card {
-    padding: 16px;
+    padding: 14px;
+  }
+
+  .section-bar,
+  .service-tile__top,
+  .telemetry-card__head,
+  .runtime-check__top,
+  .wol-card__top,
+  .editor-toolbar,
+  .toolbar {
+    gap: var(--space-3);
+  }
+
+  .section-bar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .inline-cluster {
+    width: 100%;
+  }
+
+  .kpi-strip,
+  .telemetry-grid {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding-bottom: 2px;
+  }
+
+  .kpi-strip {
+    grid-auto-columns: minmax(176px, 78vw);
+  }
+
+  .telemetry-grid {
+    grid-auto-columns: minmax(240px, 86vw);
+  }
+
+  .kpi-strip > *,
+  .telemetry-grid > * {
+    scroll-snap-align: start;
+  }
+
+  .metric-tile,
+  .telemetry-card {
+    min-height: 100%;
+  }
+
+  .metric-tile {
+    padding: 14px;
+  }
+
+  .metric-tile__spark {
+    height: 56px;
+  }
+
+  .metric-tile__value {
+    font-size: 1.58rem;
+  }
+
+  .telemetry-card__chart {
+    height: 104px;
+  }
+
+  .detail-grid,
+  .service-tile__stats,
+  .editor-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-pair {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .detail-pair strong {
+    text-align: left;
+  }
+
+  .service-tile {
+    padding: 14px;
+    gap: var(--space-3);
+  }
+
+  .service-tile__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .service-tile__action {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .module-row {
+    gap: var(--space-3);
+  }
+
+  .module-row__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .module-row__facts > * {
+    min-width: 0;
+  }
+
+  .module-row__facts .button {
+    width: 100%;
+  }
+
+  .module-row__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .module-row__actions .button {
+    width: 100%;
+  }
+
+  .module-row__actions .button--solid {
+    grid-column: 1 / -1;
+  }
+
+  .runtime-checks {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-field textarea {
+    min-height: 240px;
+  }
+
+  .activity-panel .editor-field textarea {
+    min-height: 160px;
+  }
+
+  .editor-toolbar {
+    position: sticky;
+    bottom: 0;
+    margin-inline: -14px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+  }
+
+  .feedback-banner,
+  .empty-state {
+    padding: 12px 14px;
+  }
+
+  .table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
   }
 
   .data-table,
@@ -994,18 +1195,39 @@ html[data-theme="light"] .editor-toolbar {
     display: none;
   }
 
-  .data-table tr {
-    border-top: 1px solid var(--border);
+  .data-table tbody {
+    display: grid;
+    gap: var(--space-3);
   }
 
-  .data-table tr:first-child {
-    border-top: 0;
+  .data-table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .data-table tr[data-tone="good"] {
+    box-shadow: inset 3px 0 0 var(--tone-good);
+  }
+
+  .data-table tr[data-tone="warning"] {
+    box-shadow: inset 3px 0 0 var(--tone-warn);
+  }
+
+  .data-table tr[data-tone="danger"] {
+    box-shadow: inset 3px 0 0 var(--tone-danger);
   }
 
   .data-table td {
     display: grid;
     gap: 4px;
-    padding: 12px 14px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .data-table td:first-child {
+    border-top: 0;
   }
 
   .data-table td::before {
@@ -1024,10 +1246,6 @@ html[data-theme="light"] .editor-toolbar {
 }
 
 @media (max-width: 560px) {
-  .kpi-strip {
-    grid-template-columns: 1fr;
-  }
-
   .auth-topbar,
   .section-bar,
   .telemetry-card__meta,
@@ -1051,7 +1269,71 @@ html[data-theme="light"] .editor-toolbar {
     flex: 1 1 auto;
   }
 
+  .button-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button-row > * {
+    width: 100%;
+  }
+
+  .kpi-strip {
+    grid-auto-columns: minmax(164px, 84vw);
+  }
+
+  .telemetry-grid {
+    grid-auto-columns: minmax(220px, 88vw);
+  }
+
   .theme-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    width: min(100% - 10px, 1480px);
+  }
+
+  .command-bar {
+    padding: 12px;
+  }
+
+  .command-cluster,
+  .detail-grid,
+  .service-tile__stats,
+  .editor-meta,
+  .module-row__facts,
+  .module-row__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .command-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-tile,
+  .telemetry-card,
+  .service-tile,
+  .runtime-check,
+  .wol-card,
+  .module-row {
+    padding: 12px;
+  }
+
+  .editor-toolbar {
+    margin-inline: -12px;
+    padding-inline: 12px;
+  }
+
+  .command-title-row {
+    align-items: flex-start;
+  }
+
+  .signal,
+  .mini-note,
+  .chip {
+    white-space: normal;
   }
 }

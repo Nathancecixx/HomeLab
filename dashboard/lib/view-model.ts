@@ -93,6 +93,10 @@ export function serviceLabel(health: ServiceHealth) {
   return "Error";
 }
 
+export function serviceStatusText(service: Pick<ServiceSnapshot, "health" | "statusLabel">) {
+  return service.statusLabel ?? serviceLabel(service.health);
+}
+
 export function toneForHealth(level: HealthLevel): Tone {
   if (level === "healthy") {
     return "good";
@@ -147,10 +151,35 @@ export function buildAppHref(service: ServiceSnapshot, hostname: string) {
   }
 
   const path = service.app.path ?? "/";
-  return `${service.app.protocol}://${hostname}:${service.app.port}${path}`;
+  const host = service.app.host ?? hostname;
+  return `${service.app.protocol}://${host}:${service.app.port}${path}`;
+}
+
+export function formatServiceTarget(service: Pick<ServiceSnapshot, "kind" | "composeProject" | "monitorUrl">) {
+  if (service.kind !== "http" || !service.monitorUrl) {
+    return service.composeProject;
+  }
+
+  try {
+    return new URL(service.monitorUrl).host;
+  } catch {
+    return service.monitorUrl;
+  }
 }
 
 export function getServiceIssueLabel(service: ServiceSnapshot) {
+  if (service.kind === "http") {
+    if (service.health === "partial") {
+      return "API degraded";
+    }
+
+    if (!service.running) {
+      return "Endpoint down";
+    }
+
+    return null;
+  }
+
   if (service.health !== "error") {
     return null;
   }

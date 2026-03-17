@@ -5,7 +5,7 @@ import { EventEmitter } from "node:events";
 import si from "systeminformation";
 
 import { appConfig } from "@/lib/config";
-import { inspectService, listDockerContainers } from "@/lib/docker";
+import { inspectHttpService, inspectService, listDockerContainers } from "@/lib/docker";
 import { readHostIdentity, readHostPrimaryInterface, readHostStorage, readHostUptimeSeconds } from "@/lib/host";
 import { buildRuntimeStatus } from "@/lib/runtime-status";
 import { getServicePaths, resolveServiceApp, serviceRegistry } from "@/lib/services";
@@ -468,7 +468,33 @@ class TelemetryManager {
       listDockerContainers(),
       Promise.all(
         serviceRegistry.map(async (service) => {
+          if (service.kind === "http") {
+            return inspectHttpService(service);
+          }
+
           const { modulePath, envPath } = getServicePaths(service);
+          if (!modulePath || !envPath) {
+            return {
+              kind: service.kind ?? "compose",
+              id: service.id,
+              label: service.label,
+              description: service.description,
+              modulePath: null,
+              envPath: null,
+              composeProject: service.composeProject,
+              definedServices: [],
+              runningServices: [],
+              actions: service.actions,
+              running: false,
+              supportsEnvFile: false,
+              hasEnv: false,
+              health: "error",
+              details: ["Service paths are not configured."],
+              monitorUrl: service.monitorUrl ?? null,
+              app: resolveServiceApp(service, ""),
+            } satisfies ServiceSnapshot;
+          }
+
           const [moduleExists, hasEnv, envText] = await Promise.all([
             pathExists(modulePath),
             pathExists(envPath),
@@ -477,6 +503,7 @@ class TelemetryManager {
 
           if (!moduleExists) {
             return {
+              kind: service.kind ?? "compose",
               id: service.id,
               label: service.label,
               description: service.description,
@@ -485,10 +512,13 @@ class TelemetryManager {
               composeProject: service.composeProject,
               definedServices: [],
               runningServices: [],
+              actions: service.actions,
               running: false,
+              supportsEnvFile: true,
               hasEnv,
               health: "error",
               details: ["Module directory is missing or not mounted into the dashboard container."],
+              monitorUrl: service.monitorUrl ?? null,
               app: resolveServiceApp(service, envText),
             } satisfies ServiceSnapshot;
           }

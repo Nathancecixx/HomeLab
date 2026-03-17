@@ -6,6 +6,7 @@ import type { ServiceSnapshot } from "@/lib/types";
 
 function createService(overrides?: Partial<ServiceSnapshot>): ServiceSnapshot {
   return {
+    kind: "compose",
     id: "nextcloud",
     label: "Nextcloud",
     description: "Files",
@@ -14,10 +15,13 @@ function createService(overrides?: Partial<ServiceSnapshot>): ServiceSnapshot {
     composeProject: "nextcloud",
     definedServices: ["app"],
     runningServices: ["app"],
+    actions: ["start", "stop", "restart"],
     running: true,
+    supportsEnvFile: true,
     hasEnv: true,
     health: "running",
     details: ["1 of 1 compose services running."],
+    monitorUrl: null,
     app: {
       label: "Open",
       port: 8443,
@@ -44,6 +48,22 @@ describe("view-model helpers", () => {
 
   it("builds direct app links from a service snapshot", () => {
     assert.equal(buildAppHref(createService(), "bigredpi"), "https://bigredpi:8443/");
+    assert.equal(
+      buildAppHref(
+        createService({
+          kind: "http",
+          app: {
+            label: "Open App",
+            host: "192.168.40.94",
+            port: 3000,
+            protocol: "http",
+            path: "/",
+          },
+        }),
+        "bigredpi"
+      ),
+      "http://192.168.40.94:3000/"
+    );
     assert.equal(buildAppHref(createService({ app: null }), "bigredpi"), null);
   });
 
@@ -66,6 +86,19 @@ describe("view-model helpers", () => {
         })
       ),
       "Module missing"
+    );
+    assert.equal(
+      getServiceIssueLabel(
+        createService({
+          kind: "http",
+          supportsEnvFile: false,
+          monitorUrl: "http://192.168.40.94:11434/",
+          running: false,
+          health: "stopped",
+          details: ["fetch failed"],
+        })
+      ),
+      "Endpoint down"
     );
   });
 });

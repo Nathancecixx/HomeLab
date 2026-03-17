@@ -18,8 +18,14 @@ export async function GET(_: Request, context: { params: Promise<{ id: string }>
   if (!service) {
     return NextResponse.json({ error: "Unknown service." }, { status: 404 });
   }
+  if (!service.envFileName) {
+    return NextResponse.json({ error: "This service does not have a managed env file." }, { status: 400 });
+  }
 
   const { envPath } = getServicePaths(service);
+  if (!envPath) {
+    return NextResponse.json({ error: "This service does not have a managed env file." }, { status: 400 });
+  }
   const snapshot = await readEnvFileSnapshot(envPath);
   return NextResponse.json(snapshot);
 }
@@ -41,9 +47,15 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   if (!service) {
     return NextResponse.json({ error: "Unknown service." }, { status: 404 });
   }
+  if (!service.envFileName) {
+    return NextResponse.json({ error: "This service does not have a managed env file." }, { status: 400 });
+  }
 
   try {
     const { envPath } = getServicePaths(service);
+    if (!envPath) {
+      return NextResponse.json({ error: "This service does not have a managed env file." }, { status: 400 });
+    }
     await writeEnvFile(envPath, text);
     const snapshot = await readEnvFileSnapshot(envPath);
     return NextResponse.json({ ok: true, snapshot });

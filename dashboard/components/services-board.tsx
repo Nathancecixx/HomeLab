@@ -1,5 +1,11 @@
 import type { ServiceSnapshot } from "@/lib/types";
-import { buildAppHref, getServiceIssueLabel, serviceLabel, toneForService } from "@/lib/view-model";
+import {
+  buildAppHref,
+  formatServiceTarget,
+  getServiceIssueLabel,
+  serviceStatusText,
+  toneForService,
+} from "@/lib/view-model";
 
 type ServicesBoardProps = {
   services: ServiceSnapshot[];
@@ -30,6 +36,7 @@ export function ServicesBoard({ services, hostname }: ServicesBoardProps) {
         {services.map((service) => {
           const href = buildAppHref(service, hostname);
           const issueLabel = getServiceIssueLabel(service);
+          const target = formatServiceTarget(service);
           return (
             <article key={service.id} className="service-tile" data-tone={toneForService(service.health)}>
               <div className="service-tile__top">
@@ -38,29 +45,48 @@ export function ServicesBoard({ services, hostname }: ServicesBoardProps) {
                   <h3>{service.label}</h3>
                 </div>
                 <span className="signal" data-tone={toneForService(service.health)}>
-                  {serviceLabel(service.health)}
+                  {serviceStatusText(service)}
                 </span>
               </div>
 
               <div className="service-tile__stats">
-                <div className="detail-pair">
-                  <span>Compose</span>
-                  <strong>
-                    {service.runningServices.length}/
-                    {Math.max(service.definedServices.length, service.runningServices.length)}
-                  </strong>
-                </div>
-                <div className="detail-pair">
-                  <span>.env</span>
-                  <strong>{service.hasEnv ? "Ready" : "Missing"}</strong>
-                </div>
-                <div className="detail-pair">
-                  <span>Project</span>
-                  <strong className="mono">{service.composeProject}</strong>
-                </div>
+                {service.kind === "http" ? (
+                  <>
+                    <div className="detail-pair">
+                      <span>Check</span>
+                      <strong>HTTP ping</strong>
+                    </div>
+                    <div className="detail-pair">
+                      <span>.env</span>
+                      <strong>Remote</strong>
+                    </div>
+                    <div className="detail-pair">
+                      <span>Target</span>
+                      <strong className="mono">{target}</strong>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="detail-pair">
+                      <span>Compose</span>
+                      <strong>
+                        {service.runningServices.length}/
+                        {Math.max(service.definedServices.length, service.runningServices.length)}
+                      </strong>
+                    </div>
+                    <div className="detail-pair">
+                      <span>.env</span>
+                      <strong>{service.hasEnv ? "Ready" : "Missing"}</strong>
+                    </div>
+                    <div className="detail-pair">
+                      <span>Project</span>
+                      <strong className="mono">{service.composeProject}</strong>
+                    </div>
+                  </>
+                )}
                 <div className="detail-pair">
                   <span>Surface</span>
-                  <strong>{service.app?.label ?? "None"}</strong>
+                  <strong>{service.app?.label ?? (service.kind === "http" ? "API only" : "None")}</strong>
                 </div>
               </div>
 
@@ -75,7 +101,7 @@ export function ServicesBoard({ services, hostname }: ServicesBoardProps) {
                     {service.app?.label}
                   </a>
                 ) : (
-                  <span className="mini-note service-tile__action">No UI</span>
+                  <span className="mini-note service-tile__action">{service.kind === "http" ? "API only" : "No UI"}</span>
                 )}
               </div>
             </article>

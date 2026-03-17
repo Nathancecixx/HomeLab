@@ -23,6 +23,9 @@ export async function POST(_: Request, context: { params: Promise<{ id: string; 
   if (!service) {
     return NextResponse.json({ error: "Unknown service." }, { status: 404 });
   }
+  if (!service.actions.includes(action as AdminAction)) {
+    return NextResponse.json({ error: "This service does not support that action." }, { status: 400 });
+  }
 
   const result = await runServiceAction(service, action as AdminAction);
   return NextResponse.json(result, { status: result.ok ? 200 : 500 });

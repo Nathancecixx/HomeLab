@@ -119,8 +119,51 @@ function deriveHealth(definedServices: string[], runningServices: string[], erro
   return "running";
 }
 
+function formatHttpStatus(status: number, statusText: string) {
+  return `${status}${statusText ? ` ${statusText}` : ""}`.trim();
+}
+
+function getHttpHealth(status: number): Pick<ServiceSnapshot, "health" | "running" | "statusLabel" | "details"> {
+  if (status >= 500) {
+    return {
+      health: "partial",
+      running: true,
+      statusLabel: "Degraded",
+      details: [`Endpoint responded with ${formatHttpStatus(status, "server error")}.`],
+    };
+  }
+
+  return {
+    health: "running",
+    running: true,
+    statusLabel: "Live",
+    details: [`Endpoint responded with ${formatHttpStatus(status, "reachable")}.`],
+  };
+}
+
 export async function inspectService(service: ServiceRegistryEntry, envText: string, hasEnv: boolean): Promise<ServiceSnapshot> {
   const { modulePath, envPath } = getServicePaths(service);
+  if (!modulePath || !envPath) {
+    return {
+      kind: service.kind ?? "compose",
+      id: service.id,
+      label: service.label,
+      description: service.description,
+      modulePath: null,
+      envPath: null,
+      composeProject: service.composeProject,
+      definedServices: [],
+      runningServices: [],
+      actions: service.actions,
+      running: false,
+      supportsEnvFile: false,
+      hasEnv: false,
+      health: "error",
+      details: ["Service paths are not configured."],
+      monitorUrl: service.monitorUrl ?? null,
+      app: resolveServiceApp(service, envText),
+    };
+  }
   const [defined, running] = await Promise.all([
     getComposeServices(modulePath, ["config", "--services"]),
     getComposeServices(modulePath, ["ps", "--services", "--status", "running"]),
@@ -130,6 +173,7 @@ export async function inspectService(service: ServiceRegistryEntry, envText: str
   const health = deriveHealth(defined.lines, running.lines, detailError);
 
   return {
+    kind: service.kind ?? "compose",
     id: service.id,
     label: service.label,
     description: service.description,
@@ -138,7 +182,9 @@ export async function inspectService(service: ServiceRegistryEntry, envText: str
     composeProject: service.composeProject,
     definedServices: defined.lines,
     runningServices: running.lines,
+    actions: service.actions,
     running: running.lines.length > 0,
+    supportsEnvFile: true,
     hasEnv,
     health,
     details: detailError
@@ -146,12 +192,107 @@ export async function inspectService(service: ServiceRegistryEntry, envText: str
       : running.lines.length > 0
         ? [`${running.lines.length} of ${defined.lines.length || running.lines.length} compose services active.`]
         : ["No compose services are currently running."],
+    monitorUrl: service.monitorUrl ?? null,
     app: resolveServiceApp(service, envText),
   };
 }
 
+export async function inspectHttpService(service: ServiceRegistryEntry): Promise<ServiceSnapshot> {
+  const monitorUrl = service.monitorUrl ?? null;
+  const app = resolveServiceApp(service, "");
+
+  if (!monitorUrl) {
+    return {
+      kind: "http",
+      id: service.id,
+      label: service.label,
+      description: service.description,
+      modulePath: null,
+      envPath: null,
+      composeProject: service.composeProject,
+      definedServices: [],
+      runningServices: [],
+      actions: service.actions,
+      running: false,
+      supportsEnvFile: false,
+      hasEnv: false,
+      health: "error",
+      statusLabel: "Offline",
+      details: ["Remote monitor URL is not configured."],
+      monitorUrl,
+      app,
+    };
+  }
+
+  try {
+    const response = await fetch(monitorUrl, {
+      method: "GET",
+      redirect: "follow",
+      signal: AbortSignal.timeout(4_000),
+    });
+    const status = getHttpHealth(response.status);
+
+    return {
+      kind: "http",
+      id: service.id,
+      label: service.label,
+      description: service.description,
+      modulePath: null,
+      envPath: null,
+      composeProject: service.composeProject,
+      definedServices: ["endpoint"],
+      runningServices: status.running ? ["endpoint"] : [],
+      actions: service.actions,
+      running: status.running,
+      supportsEnvFile: false,
+      hasEnv: false,
+      health: status.health,
+      statusLabel: status.statusLabel,
+      details:
+        response.status >= 500
+          ? [`Endpoint responded with ${formatHttpStatus(response.status, response.statusText)}.`]
+          : [`Endpoint responded with ${formatHttpStatus(response.status, response.statusText)}.`],
+      monitorUrl,
+      app,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Remote endpoint did not respond.";
+    return {
+      kind: "http",
+      id: service.id,
+      label: service.label,
+      description: service.description,
+      modulePath: null,
+      envPath: null,
+      composeProject: service.composeProject,
+      definedServices: ["endpoint"],
+      runningServices: [],
+      actions: service.actions,
+      running: false,
+      supportsEnvFile: false,
+      hasEnv: false,
+      health: "stopped",
+      statusLabel: "Offline",
+      details: [message],
+      monitorUrl,
+      app,
+    };
+  }
+}
+
 export async function runServiceAction(service: ServiceRegistryEntry, action: AdminAction): Promise<AdminActionResult> {
   const { modulePath } = getServicePaths(service);
+  if (!modulePath) {
+    return {
+      ok: false,
+      action,
+      serviceId: service.id,
+      stdout: "",
+      stderr: "This service does not support compose actions.",
+      exitCode: null,
+      executedAt: new Date().toISOString(),
+    };
+  }
   const steps: string[][] =
     action === "start"
       ? [["compose", "up", "-d"]]

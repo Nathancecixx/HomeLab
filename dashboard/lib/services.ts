@@ -9,11 +9,23 @@ function withDefaultPort(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function appLinkFromUrl(urlValue: string, label: string) {
+  const url = new URL(urlValue);
+  return {
+    label,
+    protocol: url.protocol === "https:" ? "https" : "http",
+    host: url.hostname,
+    port: withDefaultPort(url.port, url.protocol === "https:" ? 443 : 80),
+    path: url.pathname || "/",
+  } as const;
+}
+
 export const serviceRegistry: ServiceRegistryEntry[] = [
   {
     id: "wireguard",
     label: "WireGuard VPN",
     description: "Encrypted remote access into the LAN.",
+    kind: "compose",
     directoryName: "vpn-wireguard",
     envFileName: ".env",
     composeProject: "vpn-wireguard",
@@ -23,6 +35,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     id: "nextcloud",
     label: "Nextcloud",
     description: "Personal cloud storage and sync surface.",
+    kind: "compose",
     directoryName: "nextcloud",
     envFileName: ".env",
     composeProject: "nextcloud",
@@ -37,6 +50,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     id: "bitcoind",
     label: "Bitcoin Node",
     description: "Core blockchain node with private RPC exposure.",
+    kind: "compose",
     directoryName: "node-bitcoin",
     envFileName: ".env",
     composeProject: "node-bitcoin",
@@ -45,7 +59,8 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
   {
     id: "fitnesspal",
     label: "Fitness Pal",
-    description: "Personalized AI training coach",
+    description: "Personalized AI training coach.",
+    kind: "compose",
     directoryName: "../external/FitnessPal",
     envFileName: ".env",
     composeProject: "fitnesspal",
@@ -56,6 +71,25 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
       protocol: "http",
     }),
   },
+  {
+    id: "openwebui",
+    label: "Open WebUI",
+    description: "Remote chat surface on the workstation.",
+    kind: "http",
+    composeProject: "open-webui",
+    actions: [],
+    monitorUrl: "http://192.168.40.94:3000/",
+    appResolver: () => appLinkFromUrl("http://192.168.40.94:3000/", "Open App"),
+  },
+  {
+    id: "ollama",
+    label: "Ollama",
+    description: "Remote model runtime served from the workstation.",
+    kind: "http",
+    composeProject: "ollama",
+    actions: [],
+    monitorUrl: "http://192.168.40.94:11434/",
+  },
 ];
 
 export function getServiceById(id: string) {
@@ -63,6 +97,10 @@ export function getServiceById(id: string) {
 }
 
 export function getServicePaths(service: ServiceRegistryEntry) {
+  if (!service.directoryName || !service.envFileName) {
+    return { modulePath: null, envPath: null };
+  }
+
   const modulePath = path.join(appConfig.homelabRoot, service.directoryName);
   const envPath = path.join(modulePath, service.envFileName);
   return { modulePath, envPath };

@@ -1,5 +1,6 @@
 export type HealthLevel = "healthy" | "warning" | "critical";
 export type ServiceHealth = "running" | "partial" | "stopped" | "error";
+export type ServiceKind = "compose" | "http";
 export type ThemeMode = "dark" | "light";
 export type AdminAction = "start" | "stop" | "restart";
 export type RuntimeCheckId = "auth" | "docker" | "telemetry" | "wol";
@@ -8,33 +9,41 @@ export interface ServiceAppLink {
   label: string;
   port: number;
   protocol: "http" | "https";
+  host?: string;
   path?: string;
 }
 
 export interface ServiceRegistryEntry {
+  kind?: ServiceKind;
   id: string;
   label: string;
   description: string;
-  directoryName: string;
-  envFileName: string;
+  directoryName?: string;
+  envFileName?: string;
   composeProject: string;
   actions: AdminAction[];
+  monitorUrl?: string;
   appResolver?: (env: Record<string, string>) => ServiceAppLink | null;
 }
 
 export interface ServiceSnapshot {
+  kind: ServiceKind;
   id: string;
   label: string;
   description: string;
-  modulePath: string;
-  envPath: string;
+  modulePath: string | null;
+  envPath: string | null;
   composeProject: string;
   definedServices: string[];
   runningServices: string[];
+  actions: AdminAction[];
   running: boolean;
+  supportsEnvFile: boolean;
   hasEnv: boolean;
   health: ServiceHealth;
+  statusLabel?: string;
   details: string[];
+  monitorUrl: string | null;
   app: ServiceAppLink | null;
 }
 

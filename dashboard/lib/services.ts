@@ -43,12 +43,12 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     actions: ["start", "stop", "restart"],
   },
   {
-    id: "Ai Coach",
+    id: "fitnesspal",
     label: "Fitness Pal",
     description: "Personalized AI training coach",
     directoryName: "../FitnessPal",
     envFileName: ".env",
-    composeProject: "FitnessPal",
+    composeProject: "fitnesspal",
     actions: ["start", "stop", "restart"],
     appResolver: () => ({
       label: "Open App",

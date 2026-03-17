@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { ReactNode } from "react";
 
@@ -64,6 +64,12 @@ const monoFont = localFont({
 export const metadata: Metadata = {
   title: "BigRedPi Dashboard",
   description: "Modern monitoring and control surface for the BigRedPi homelab.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

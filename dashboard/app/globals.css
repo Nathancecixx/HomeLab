@@ -1020,6 +1020,7 @@ html[data-theme="light"] .editor-toolbar {
 
   .section-bar,
   .service-tile__top,
+  .metric-tile__head,
   .telemetry-card__head,
   .runtime-check__top,
   .wol-card__top,
@@ -1033,26 +1034,46 @@ html[data-theme="light"] .editor-toolbar {
     flex-wrap: wrap;
   }
 
+  .service-tile__top,
+  .metric-tile__head,
+  .telemetry-card__head,
+  .runtime-check__top,
+  .wol-card__top {
+    flex-wrap: wrap;
+  }
+
   .inline-cluster {
     width: 100%;
   }
 
+  .command-stat strong,
+  .signal,
+  .mini-note,
+  .chip {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .command-stat strong {
+    overflow: visible;
+    text-overflow: unset;
+    overflow-wrap: anywhere;
+  }
+
   .kpi-strip,
   .telemetry-grid {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    padding-bottom: 2px;
+    grid-template-columns: 1fr;
+    grid-auto-flow: row;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .kpi-strip {
-    grid-auto-columns: minmax(176px, 78vw);
+    grid-auto-columns: auto;
   }
 
   .telemetry-grid {
-    grid-auto-columns: minmax(240px, 86vw);
+    grid-auto-columns: auto;
   }
 
   .kpi-strip > *,
@@ -1084,7 +1105,7 @@ html[data-theme="light"] .editor-toolbar {
   .detail-grid,
   .service-tile__stats,
   .editor-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .detail-pair {
@@ -1110,6 +1131,10 @@ html[data-theme="light"] .editor-toolbar {
   .service-tile__action {
     margin-left: 0;
     width: 100%;
+  }
+
+  .telemetry-card__meta {
+    flex-wrap: wrap;
   }
 
   .module-row {
@@ -1276,14 +1301,6 @@ html[data-theme="light"] .editor-toolbar {
 
   .button-row > * {
     width: 100%;
-  }
-
-  .kpi-strip {
-    grid-auto-columns: minmax(164px, 84vw);
-  }
-
-  .telemetry-grid {
-    grid-auto-columns: minmax(220px, 88vw);
   }
 
   .theme-button {

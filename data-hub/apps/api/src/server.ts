@@ -2,7 +2,7 @@ import { createApp } from "./app.js";
 
 async function main() {
   const app = await createApp();
-  const port = Number(process.env.PORT ?? 8084);
+  const port = Number(process.env.PORT ?? 8184);
   await app.listen({
     host: "0.0.0.0",
     port,

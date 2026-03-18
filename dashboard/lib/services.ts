@@ -45,7 +45,7 @@ export const serviceRegistry: ServiceRegistryEntry[] = [
     actions: ["start", "stop", "restart"],
     appResolver: (env) => ({
       label: "Open Data Hub",
-      port: withDefaultPort(env.DATA_HUB_WEB_PORT, 8083),
+      port: withDefaultPort(env.DATA_HUB_WEB_PORT, 8183),
       protocol: "http",
     }),
   },

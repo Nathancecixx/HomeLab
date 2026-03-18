@@ -4,8 +4,8 @@ Private, chronological media and news hub for the HomeLab.
 
 ## What it includes
 
-- Next.js consumer web app on port `8083`
-- Fastify REST/SSE API on port `8084`
+- Next.js consumer web app on port `8183`
+- Fastify REST/SSE API on port `8184`
 - BullMQ worker for polling, summaries, watchlist matches, and media caching
 - Postgres for shared household data
 - Redis for job queues
@@ -18,7 +18,7 @@ Private, chronological media and news hub for the HomeLab.
 3. Set `DATA_HUB_MEDIA_ROOT` to a persistent storage path such as `/srv/storage/data-hub`.
 4. Run `npm install` inside `data-hub/` if you are developing locally.
 5. Start the stack with `docker compose up -d --build`.
-6. Open `http://<pi-ip>:8083/`.
+6. Open `http://<pi-ip>:8183/`.
 
 ## Local development
 

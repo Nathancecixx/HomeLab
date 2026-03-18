@@ -59,7 +59,7 @@ export interface DataHubConfig {
 export function createDataHubConfig(env: NodeJS.ProcessEnv): DataHubConfig {
   return {
     nodeEnv: env.NODE_ENV ?? "development",
-    port: parseNumber(env.PORT, 8084),
+    port: parseNumber(env.PORT, 8184),
     databaseUrl: env.DATABASE_URL ?? "postgres://datahub:datahub@localhost:5432/datahub",
     redisUrl: env.REDIS_URL ?? "redis://127.0.0.1:6379",
     sessionSecret: env.SESSION_SECRET ?? "change-me",
@@ -67,9 +67,9 @@ export function createDataHubConfig(env: NodeJS.ProcessEnv): DataHubConfig {
     cookieSecure: parseBoolean(env.COOKIE_SECURE, false),
     mediaRoot: env.MEDIA_ROOT ?? env.DATA_HUB_MEDIA_ROOT ?? path.resolve(process.cwd(), "..", "..", ".data-hub-media"),
     mediaQuotaBytes: parseNumber(env.DATA_HUB_MEDIA_QUOTA_BYTES, 20 * 1024 * 1024 * 1024),
-    webOrigin: env.DATA_HUB_WEB_ORIGIN ?? "http://localhost:8083",
-    apiOrigin: env.DATA_HUB_API_ORIGIN ?? "http://localhost:8084",
-    internalApiUrl: env.DATA_HUB_INTERNAL_API_URL ?? "http://127.0.0.1:8084",
+    webOrigin: env.DATA_HUB_WEB_ORIGIN ?? "http://localhost:8183",
+    apiOrigin: env.DATA_HUB_API_ORIGIN ?? "http://localhost:8184",
+    internalApiUrl: env.DATA_HUB_INTERNAL_API_URL ?? "http://127.0.0.1:8184",
     seedAdmin: {
       email: env.SEED_ADMIN_EMAIL ?? "admin@homelab.local",
       password: env.SEED_ADMIN_PASSWORD ?? "change-me-admin",

@@ -34,22 +34,6 @@ export const serviceDeviceRegistry: ServiceDeviceEntry[] = [
 
 export const serviceRegistry: ServiceRegistryEntry[] = [
   {
-    id: "datahub",
-    label: "Data Hub",
-    description: "Private chronological feeds, watchlists, and media playback.",
-    kind: "compose",
-    deviceId: "bigredpi",
-    directoryName: "data-hub",
-    envFileName: ".env",
-    composeProject: "data-hub",
-    actions: ["start", "stop", "restart"],
-    appResolver: (env) => ({
-      label: "Open Data Hub",
-      port: withDefaultPort(env.DATA_HUB_WEB_PORT, 8083),
-      protocol: "http",
-    }),
-  },
-  {
     id: "wireguard",
     label: "WireGuard VPN",
     description: "Encrypted remote access into the LAN.",

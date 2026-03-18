@@ -2,7 +2,3 @@
 dashboard/.next/
 dashboard/node_modules/
 dashboard/coverage/
-data-hub/node_modules/
-data-hub/apps/web/.next/
-data-hub/**/dist/
-data-hub/**/node_modules/

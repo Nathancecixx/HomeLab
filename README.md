@@ -695,20 +695,6 @@ docker compose pull && docker compose up -d
 
 ---
 
-## Data Hub
-
-The repo now also includes a `data-hub/` module for a private chronological media/news hub with:
-
-* a web app on **8083**
-* a Fastify API on **8084**
-* a BullMQ worker for ingestion, media caching, and summaries
-* RSS/Atom, podcast, and YouTube feed support
-* household watchlists plus read/search agent tokens
-
-See `data-hub/README.md` for setup and local development.
-
----
-
 ## License
 
 This project is licensed under the **MIT License** — add a `LICENSE` file with the full text if you haven’t already.

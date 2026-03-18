@@ -699,8 +699,8 @@ docker compose pull && docker compose up -d
 
 The repo now also includes a `data-hub/` module for a private chronological media/news hub with:
 
-* a web app on **8183**
-* a Fastify API on **8184**
+* a web app on **8083**
+* a Fastify API on **8084**
 * a BullMQ worker for ingestion, media caching, and summaries
 * RSS/Atom, podcast, and YouTube feed support
 * household watchlists plus read/search agent tokens

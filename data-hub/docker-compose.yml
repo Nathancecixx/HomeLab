@@ -44,7 +44,7 @@ services:
       PORT: 8084
       MEDIA_ROOT: /data-hub-media
     ports:
-      - "${DATA_HUB_API_PORT:-8184}:8084"
+      - "${DATA_HUB_API_PORT:-8084}:8084"
     volumes:
       - ${DATA_HUB_MEDIA_ROOT}:/data-hub-media
     healthcheck:
@@ -88,7 +88,7 @@ services:
       NEXT_PUBLIC_API_BASE_URL: ${DATA_HUB_API_ORIGIN}
       DATA_HUB_INTERNAL_API_URL: ${DATA_HUB_INTERNAL_API_URL}
     ports:
-      - "${DATA_HUB_WEB_PORT:-8183}:3000"
+      - "${DATA_HUB_WEB_PORT:-8083}:3000"
 
 volumes:
   data-hub-postgres:

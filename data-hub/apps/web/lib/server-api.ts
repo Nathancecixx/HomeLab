@@ -14,7 +14,7 @@ import type {
   Watchlist,
 } from "@data-hub/contracts";
 
-const INTERNAL_API_BASE = process.env.DATA_HUB_INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8184";
+const INTERNAL_API_BASE = process.env.DATA_HUB_INTERNAL_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8084";
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const cookieStore = await cookies();
@@ -118,5 +118,5 @@ export async function getEnabledModules() {
 }
 
 export function getPublicApiBase() {
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8184";
+  return process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8084";
 }
